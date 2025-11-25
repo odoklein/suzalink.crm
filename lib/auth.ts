@@ -13,42 +13,57 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          console.log("❌ Missing credentials");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("❌ Missing credentials");
+            return null;
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: { organization: true },
+          });
+
+          if (!user) {
+            console.log(`❌ User not found: ${credentials.email}`);
+            return null;
+          }
+
+          if (!user.isActive) {
+            console.log(`❌ User account is inactive: ${credentials.email}`);
+            return null;
+          }
+
+          const isValid = await verifyPassword(credentials.password, user.passwordHash);
+
+          if (!isValid) {
+            console.log(`❌ Invalid password for: ${credentials.email}`);
+            return null;
+          }
+
+          // Update last login timestamp
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { lastLoginAt: new Date() },
+            });
+          } catch (updateError) {
+            // Log but don't fail login if update fails
+            console.warn(`⚠️ Failed to update last login: ${updateError}`);
+          }
+
+          console.log(`✅ Login successful: ${user.email} (${user.role})`);
+          return {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+            organizationId: user.organizationId,
+          };
+        } catch (error) {
+          console.error("❌ Authentication error:", error);
           return null;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: { organization: true },
-        });
-
-        if (!user) {
-          console.log(`❌ User not found: ${credentials.email}`);
-          return null;
-        }
-
-        const isValid = await verifyPassword(credentials.password, user.passwordHash);
-
-        if (!isValid) {
-          console.log(`❌ Invalid password for: ${credentials.email}`);
-          return null;
-        }
-
-        // Update last login timestamp
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
-
-        console.log(`✅ Login successful: ${user.email} (${user.role})`);
-        return {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          avatar: user.avatar,
-          organizationId: user.organizationId,
-        };
       },
     }),
   ],
@@ -79,6 +94,8 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Required for Netlify and other serverless platforms
+  debug: process.env.NODE_ENV === "development",
 };
 
 export async function hashPassword(password: string): Promise<string> {

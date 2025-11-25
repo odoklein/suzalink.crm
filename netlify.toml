@@ -5,3 +5,8 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Environment variables should be set in Netlify dashboard:
+# - NEXTAUTH_SECRET: Generate with: openssl rand -base64 32
+# - NEXTAUTH_URL: https://suzali.netlify.app (or your custom domain)
+# - DATABASE_URL: Your PostgreSQL connection string
+
