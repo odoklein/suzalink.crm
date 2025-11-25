@@ -10,6 +10,10 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+
+  // Vercel optimizations
+  output: 'standalone', // Optimized for Vercel deployment
+  poweredByHeader: false, // Remove X-Powered-By header for security
 };
 
 module.exports = nextConfig;
