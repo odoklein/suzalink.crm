@@ -72,7 +72,7 @@ export function UserCommunicationTab({ userId }: UserCommunicationTabProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-[#3BBF7A]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A6BFF]" />
       </div>
     );
   }
@@ -83,31 +83,38 @@ export function UserCommunicationTab({ userId }: UserCommunicationTabProps) {
   return (
     <div className="space-y-6">
       {/* Add Internal Note */}
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">
-            Ajouter une note interne
-          </CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Ajoutez une note interne visible uniquement par les administrateurs et gestionnaires
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#1A6BFF]/10">
+              <Plus className="h-5 w-5 text-[#1A6BFF]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">
+                Ajouter une note interne
+              </CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Visible uniquement par les administrateurs et gestionnaires
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="note">Note</Label>
+            <Label htmlFor="note" className="text-sm font-medium text-[#1B1F24]">Note</Label>
             <Textarea
               id="note"
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="Ajoutez une note interne sur cet utilisateur..."
               rows={4}
-              className="rounded-[12px]"
+              className="rounded-[12px] border-[#DEE2E6] focus:border-[#1A6BFF] focus:ring-[#1A6BFF]/20"
             />
           </div>
           <Button
             onClick={handleAddNote}
             disabled={addNoteMutation.isPending}
-            className="rounded-[12px]"
+            className="rounded-[12px] bg-[#1A6BFF] hover:bg-[#0F4FCC] shadow-sm hover:shadow-md transition-all duration-200"
           >
             {addNoteMutation.isPending ? (
               <>
@@ -125,43 +132,54 @@ export function UserCommunicationTab({ userId }: UserCommunicationTabProps) {
       </Card>
 
       {/* Internal Notes */}
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">Notes internes</CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Notes ajoutées par les administrateurs et gestionnaires
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#00D985]/10">
+              <MessageSquare className="h-5 w-5 text-[#00D985]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">Notes internes</CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Notes ajoutées par les administrateurs et gestionnaires
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {internalNotes.length === 0 ? (
-            <EmptyState
-              icon={MessageSquare}
-              title="Aucune note interne"
-              description="Aucune note interne n'a été ajoutée pour cet utilisateur."
-            />
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#F1F3F5] flex items-center justify-center">
+                <MessageSquare className="h-6 w-6 text-[#9CA3AF]" />
+              </div>
+              <p className="text-sm text-[#6B7280]">Aucune note interne</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {internalNotes.map((note: any) => (
                 <div
                   key={note.id}
-                  className="p-4 rounded-[12px] border border-[#E6E8EB] bg-[#F9FAFB]"
+                  className="p-4 rounded-xl border border-[#E6E8EB] bg-gradient-to-br from-[#F8F9FA] to-white hover:border-[#DEE2E6] transition-all duration-200"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-[#00D985]/10 text-[#00D985] border-[#00D985]/20"
+                      >
                         Note interne
                       </Badge>
-                      <span className="text-xs text-[#6B7280]">
+                      <span className="text-xs text-[#9CA3AF]">
                         {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
                       </span>
                     </div>
                     {note.createdBy && (
-                      <span className="text-xs text-[#6B7280]">
+                      <span className="text-xs text-[#6B7280] font-medium">
                         Par {note.createdBy.email?.split("@")[0]}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-[#1B1F24] whitespace-pre-wrap">{note.content}</p>
+                  <p className="text-sm text-[#1B1F24] whitespace-pre-wrap leading-relaxed">{note.content}</p>
                 </div>
               ))}
             </div>
@@ -170,39 +188,64 @@ export function UserCommunicationTab({ userId }: UserCommunicationTabProps) {
       </Card>
 
       {/* System Messages */}
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">Messages système</CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Alertes et notifications système pour cet utilisateur
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#F59E0B]/10">
+              <AlertCircle className="h-5 w-5 text-[#F59E0B]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">Messages système</CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Alertes et notifications système pour cet utilisateur
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {systemMessages.length === 0 ? (
-            <EmptyState
-              icon={AlertCircle}
-              title="Aucun message système"
-              description="Aucun message système n'a été généré pour cet utilisateur."
-            />
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#F1F3F5] flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-[#9CA3AF]" />
+              </div>
+              <p className="text-sm text-[#6B7280]">Aucun message système</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {systemMessages.map((message: any) => (
                 <div
                   key={message.id}
-                  className="p-4 rounded-[12px] border border-[#E6E8EB]"
+                  className="p-4 rounded-xl border border-[#E6E8EB] hover:border-[#DEE2E6] transition-all duration-200"
                 >
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                    <div
+                      className={`p-2 rounded-lg ${
+                        message.severity === "error"
+                          ? "bg-[#EF4444]/10"
+                          : message.severity === "warning"
+                          ? "bg-[#F59E0B]/10"
+                          : "bg-[#1A6BFF]/10"
+                      }`}
+                    >
+                      <AlertCircle
+                        className={`h-4 w-4 ${
+                          message.severity === "error"
+                            ? "text-[#EF4444]"
+                            : message.severity === "warning"
+                            ? "text-[#F59E0B]"
+                            : "text-[#1A6BFF]"
+                        }`}
+                      />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge
-                          variant="outline"
-                          className={`text-xs ${
+                          className={`text-xs border ${
                             message.severity === "error"
-                              ? "border-[#EF4444] text-[#EF4444]"
+                              ? "bg-[#EF4444]/10 border-[#EF4444]/20 text-[#EF4444]"
                               : message.severity === "warning"
-                              ? "border-[#F59E0B] text-[#F59E0B]"
-                              : ""
+                              ? "bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]"
+                              : "bg-[#1A6BFF]/10 border-[#1A6BFF]/20 text-[#1A6BFF]"
                           }`}
                         >
                           {message.severity === "error"
@@ -211,12 +254,12 @@ export function UserCommunicationTab({ userId }: UserCommunicationTabProps) {
                             ? "Avertissement"
                             : "Information"}
                         </Badge>
-                        <span className="text-xs text-[#6B7280]">
+                        <span className="text-xs text-[#9CA3AF]">
                           {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-[#1B1F24] mb-1">{message.title}</p>
-                      <p className="text-sm text-[#6B7280]">{message.content}</p>
+                      <p className="text-sm font-medium text-[#1B1F24] mb-0.5">{message.title}</p>
+                      <p className="text-sm text-[#6B7280] leading-relaxed">{message.content}</p>
                     </div>
                   </div>
                 </div>

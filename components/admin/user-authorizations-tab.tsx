@@ -237,15 +237,21 @@ export function UserAuthorizationsTab({ userId, user }: UserAuthorizationsTabPro
 
   return (
     <div className="space-y-6">
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">
-            Autorisations personnalisées
-          </CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Définissez des permissions spécifiques pour cet utilisateur. Les permissions peuvent
-            être héritées du rôle ou surchargées individuellement.
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#A46CFF]/10">
+              <Info className="h-5 w-5 text-[#A46CFF]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">
+                Autorisations personnalisées
+              </CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Définissez des permissions spécifiques pour cet utilisateur
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.entries(groupedPermissions).map(([category, perms], categoryIndex) => (
@@ -302,7 +308,7 @@ export function UserAuthorizationsTab({ userId, user }: UserAuthorizationsTabPro
             <Button
               onClick={handleSave}
               disabled={updatePermissionsMutation.isPending}
-              className="rounded-[12px]"
+              className="rounded-[12px] bg-[#1A6BFF] hover:bg-[#0F4FCC] shadow-sm hover:shadow-md transition-all duration-200"
             >
               {updatePermissionsMutation.isPending ? (
                 <>
@@ -317,16 +323,17 @@ export function UserAuthorizationsTab({ userId, user }: UserAuthorizationsTabPro
         </CardContent>
       </Card>
 
-      <Card className="border-[#E6E8EB] bg-[#F9FAFB]">
-        <CardContent className="p-6">
+      <Card className="border-[#E6E8EB] bg-gradient-to-br from-[#F8F9FA] to-white">
+        <CardContent className="p-5">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-[#3BBF7A] flex-shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <h3 className="font-semibold text-[#1B1F24]">À propos des autorisations</h3>
-              <p className="text-sm text-[#6B7280]">
+            <div className="p-2 rounded-lg bg-[#1A6BFF]/10 flex-shrink-0">
+              <Info className="h-4 w-4 text-[#1A6BFF]" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-[#1B1F24]">À propos des autorisations</h3>
+              <p className="text-sm text-[#6B7280] leading-relaxed">
                 Les permissions peuvent être héritées du rôle de l'utilisateur ou surchargées
-                individuellement. Les permissions surchargées sont marquées et prévalent sur les
-                valeurs par défaut du rôle.
+                individuellement. Les permissions surchargées prévalent sur les valeurs par défaut du rôle.
               </p>
             </div>
           </div>

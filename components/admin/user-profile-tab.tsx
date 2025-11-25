@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Key, UserCog } from "lucide-react";
+import { Loader2, Key, UserCog, Globe, Mail, Save } from "lucide-react";
 
 const TIMEZONES = [
   { value: "UTC", label: "UTC (Coordinated Universal Time)" },
@@ -99,40 +99,63 @@ export function UserProfileTab({ userId, user }: UserProfileTabProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">
-            Informations de base
-          </CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Gérer les informations principales de l'utilisateur
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#1A6BFF]/10">
+              <UserCog className="h-5 w-5 text-[#1A6BFF]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">
+                Informations de base
+              </CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Gérer les informations principales de l'utilisateur
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" value={user.email} disabled className="bg-[#F9FAFB] rounded-[12px]" />
-            <p className="text-sm text-[#6B7280]">L'adresse email ne peut pas être modifiée</p>
+            <Label htmlFor="email" className="text-sm font-medium text-[#1B1F24]">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-[#6B7280]" />
+                Email
+              </div>
+            </Label>
+            <Input
+              id="email"
+              value={user.email}
+              disabled
+              className="bg-[#F8F9FA] rounded-[12px] border-[#DEE2E6] text-[#6B7280]"
+            />
+            <p className="text-xs text-[#9CA3AF]">L'adresse email ne peut pas être modifiée</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Rôle</Label>
+            <Label htmlFor="role" className="text-sm font-medium text-[#1B1F24]">Rôle</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger id="role" className="rounded-[12px]">
+              <SelectTrigger id="role" className="rounded-[12px] border-[#DEE2E6]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ADMIN">Administrateur</SelectItem>
                 <SelectItem value="MANAGER">Gestionnaire</SelectItem>
                 <SelectItem value="BD">Business Developer</SelectItem>
+                <SelectItem value="DEVELOPER">Développeur</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="timezone">Fuseau horaire</Label>
+            <Label htmlFor="timezone" className="text-sm font-medium text-[#1B1F24]">
+              <div className="flex items-center gap-2">
+                <Globe className="h-3.5 w-3.5 text-[#6B7280]" />
+                Fuseau horaire
+              </div>
+            </Label>
             <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger id="timezone" className="rounded-[12px]">
+              <SelectTrigger id="timezone" className="rounded-[12px] border-[#DEE2E6]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,18 +168,28 @@ export function UserProfileTab({ userId, user }: UserProfileTabProps) {
             </Select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
-            <Label htmlFor="isActive" className="cursor-pointer">
-              Utilisateur actif
-            </Label>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[#F8F9FA] border border-[#E6E8EB]">
+            <div>
+              <Label htmlFor="isActive" className="text-sm font-medium text-[#1B1F24] cursor-pointer">
+                Utilisateur actif
+              </Label>
+              <p className="text-xs text-[#6B7280] mt-0.5">
+                Les utilisateurs inactifs ne peuvent pas se connecter
+              </p>
+            </div>
+            <Switch
+              id="isActive"
+              checked={isActive}
+              onCheckedChange={setIsActive}
+              className="data-[state=checked]:bg-[#00D985]"
+            />
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-2">
             <Button
               onClick={handleSave}
               disabled={updateProfileMutation.isPending}
-              className="rounded-[12px]"
+              className="rounded-[12px] bg-[#1A6BFF] hover:bg-[#0F4FCC] shadow-sm hover:shadow-md transition-all duration-200"
             >
               {updateProfileMutation.isPending ? (
                 <>
@@ -164,7 +197,10 @@ export function UserProfileTab({ userId, user }: UserProfileTabProps) {
                   Enregistrement...
                 </>
               ) : (
-                "Enregistrer les modifications"
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Enregistrer les modifications
+                </>
               )}
             </Button>
           </div>
@@ -172,34 +208,49 @@ export function UserProfileTab({ userId, user }: UserProfileTabProps) {
       </Card>
 
       {/* Quick Actions */}
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">Actions rapides</CardTitle>
-          <CardDescription className="text-body text-[#6B7280]">
-            Actions administratives pour cet utilisateur
-          </CardDescription>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#F59E0B]/10">
+              <Key className="h-5 w-5 text-[#F59E0B]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-[#1B1F24]">Actions rapides</CardTitle>
+              <CardDescription className="text-sm text-[#6B7280]">
+                Actions administratives pour cet utilisateur
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            variant="outline"
-            onClick={() => resetPasswordMutation.mutate()}
-            disabled={resetPasswordMutation.isPending}
-            className="w-full justify-start rounded-[12px]"
-          >
-            <Key className="h-4 w-4 mr-2" />
-            {resetPasswordMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Réinitialisation...
-              </>
-            ) : (
-              "Réinitialiser le mot de passe"
-            )}
-          </Button>
-          <p className="text-xs text-[#6B7280]">
-            Un nouveau mot de passe temporaire sera généré et affiché, ou envoyé par email selon
-            la configuration.
-          </p>
+        <CardContent>
+          <div className="p-4 rounded-xl border border-[#E6E8EB] hover:border-[#DEE2E6] hover:bg-[#F8F9FA]/50 transition-all duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[#F1F3F5]">
+                  <Key className="h-4 w-4 text-[#6B7280]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#1B1F24]">Réinitialiser le mot de passe</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">
+                    Génère un nouveau mot de passe temporaire
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => resetPasswordMutation.mutate()}
+                disabled={resetPasswordMutation.isPending}
+                className="rounded-[10px] border-[#DEE2E6]"
+              >
+                {resetPasswordMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Réinitialiser"
+                )}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

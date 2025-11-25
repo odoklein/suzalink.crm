@@ -77,27 +77,32 @@ export function UserActivityTab({ userId }: UserActivityTabProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-[#3BBF7A]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A6BFF]" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
+      <Card className="border-[#E6E8EB] hover:shadow-sm transition-shadow duration-200">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-h2 font-semibold text-[#1B1F24]">
-                Historique d'activité
-              </CardTitle>
-              <CardDescription className="text-body text-[#6B7280]">
-                Toutes les activités de cet utilisateur dans le système
-              </CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-[#A46CFF]/10">
+                <Calendar className="h-5 w-5 text-[#A46CFF]" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold text-[#1B1F24]">
+                  Historique d'activité
+                </CardTitle>
+                <CardDescription className="text-sm text-[#6B7280]">
+                  Toutes les activités de cet utilisateur dans le système
+                </CardDescription>
+              </div>
             </div>
             <div className="w-48">
               <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
-                <SelectTrigger className="rounded-[12px]">
+                <SelectTrigger className="rounded-[12px] border-[#DEE2E6]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -113,31 +118,41 @@ export function UserActivityTab({ userId }: UserActivityTabProps) {
         </CardHeader>
         <CardContent>
           {!activities || activities.length === 0 ? (
-            <EmptyState
-              icon={Calendar}
-              title="Aucune activité"
-              description="Cet utilisateur n'a pas encore d'activité enregistrée dans le système."
-            />
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#F1F3F5] flex items-center justify-center">
+                <Calendar className="h-7 w-7 text-[#9CA3AF]" />
+              </div>
+              <p className="text-[15px] text-[#6B7280] font-medium">Aucune activité</p>
+              <p className="text-sm text-[#9CA3AF] mt-1">
+                Cet utilisateur n'a pas encore d'activité enregistrée
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {activities.map((activity: any) => (
+            <div className="space-y-3">
+              {activities.map((activity: any, index: number) => (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-4 p-4 rounded-[12px] border border-[#E6E8EB] hover:bg-[#F9FAFB] transition-colors"
+                  className="flex items-start gap-4 p-4 rounded-xl border border-[#E6E8EB] hover:border-[#DEE2E6] hover:bg-[#F8F9FA]/50 transition-all duration-200"
+                  style={{
+                    animationDelay: `${index * 30}ms`,
+                  }}
                 >
                   <div
-                    className={`w-10 h-10 rounded-full ${getActivityColor(
+                    className={`w-10 h-10 rounded-xl ${getActivityColor(
                       activity.type
-                    )} flex items-center justify-center text-white flex-shrink-0`}
+                    )} flex items-center justify-center text-white flex-shrink-0 shadow-sm`}
                   >
                     {getActivityIcon(activity.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-[#E6E8EB] bg-white font-medium"
+                      >
                         {getActivityLabel(activity.type)}
                       </Badge>
-                      <span className="text-xs text-[#6B7280]">
+                      <span className="text-xs text-[#9CA3AF]">
                         {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
                       </span>
                     </div>
@@ -148,11 +163,13 @@ export function UserActivityTab({ userId }: UserActivityTabProps) {
                       </p>
                     )}
                     {activity.metadata && (
-                      <div className="text-sm text-[#6B7280]">
+                      <div className="text-sm text-[#6B7280] space-y-0.5">
                         {activity.metadata.outcome && (
                           <p>Résultat: {activity.metadata.outcome}</p>
                         )}
-                        {activity.metadata.note && <p>Note: {activity.metadata.note}</p>}
+                        {activity.metadata.note && (
+                          <p className="line-clamp-2">Note: {activity.metadata.note}</p>
+                        )}
                         {activity.metadata.duration && (
                           <p>Durée: {activity.metadata.duration} minutes</p>
                         )}

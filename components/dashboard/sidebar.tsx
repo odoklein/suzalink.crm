@@ -48,7 +48,7 @@ const navigationGroups = [
     title: "Ventes & CRM",
     items: [
       { name: "Comptes", href: "/accounts", icon: Building2, roles: ["ADMIN", "MANAGER"] },
-      { name: "Pipelines / Opportunités", href: "/leads/workspace", icon: GitBranch, roles: ["ADMIN", "MANAGER", "BD"] },
+      { name: "Prospection", href: "/leads/workspace", icon: GitBranch, roles: ["ADMIN", "MANAGER", "BD"] },
       { name: "Campagnes", href: "/campaigns", icon: Megaphone, roles: ["ADMIN", "MANAGER", "BD"] },
     ],
   },

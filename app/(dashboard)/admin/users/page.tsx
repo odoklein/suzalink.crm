@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, MoreVertical, Edit, Trash2, UserX, UserCheck } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Edit,
+  Trash2,
+  UserX,
+  UserCheck,
+  ArrowUpDown,
+  Target,
+  Mail,
+  Phone,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,9 +44,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "@/components/admin/user-dialog";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
+import { AdminKpiWidgets } from "@/components/admin/admin-kpi-widgets";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 
@@ -49,7 +64,12 @@ type User = {
     assignedLeads: number;
     activities: number;
   };
+  leadsConverted?: number;
+  conversionRate?: number;
 };
+
+type SortField = "email" | "role" | "lastLoginAt" | "createdAt" | "leads" | "conversionRate";
+type SortDirection = "asc" | "desc";
 
 export default function AdminUsersPage() {
   const { toast } = useToast();
@@ -61,6 +81,8 @@ export default function AdminUsersPage() {
   const [editingUserId, setEditingUserId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["admin-users"],
@@ -83,6 +105,7 @@ export default function AdminUsersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users-stats"] });
       toast({
         title: "Succès",
         description: "Statut de l'utilisateur mis à jour",
@@ -104,6 +127,7 @@ export default function AdminUsersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users-stats"] });
       toast({
         title: "Succès",
         description: "Utilisateur désactivé avec succès",
@@ -132,6 +156,13 @@ export default function AdminUsersPage() {
     });
   };
 
+  const handleInlineToggle = (user: User, checked: boolean) => {
+    toggleActiveMutation.mutate({
+      userId: user.id,
+      isActive: checked,
+    });
+  };
+
   const handleDelete = (user: User) => {
     setUserToDelete({ id: user.id, email: user.email });
     setDeleteDialogOpen(true);
@@ -140,6 +171,15 @@ export default function AdminUsersPage() {
   const handleNewUser = () => {
     setEditingUserId(undefined);
     setUserDialogOpen(true);
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
   };
 
   const getRoleLabel = (role: string) => {
@@ -155,15 +195,15 @@ export default function AdminUsersPage() {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "ADMIN":
-        return "bg-[#EF4444]/10 text-[#EF4444]";
+        return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20";
       case "MANAGER":
-        return "bg-[#4C85FF]/10 text-[#4C85FF]";
+        return "bg-[#1A6BFF]/10 text-[#1A6BFF] border-[#1A6BFF]/20";
       case "BD":
-        return "bg-[#3BBF7A]/10 text-[#3BBF7A]";
+        return "bg-[#00D985]/10 text-[#00D985] border-[#00D985]/20";
       case "DEVELOPER":
-        return "bg-[#8B5CF6]/10 text-[#8B5CF6]";
+        return "bg-[#A46CFF]/10 text-[#A46CFF] border-[#A46CFF]/20";
       default:
-        return "bg-[#6B7280]/10 text-[#6B7280]";
+        return "bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/20";
     }
   };
 
@@ -177,63 +217,96 @@ export default function AdminUsersPage() {
       .slice(0, 2);
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && user.isActive) ||
-      (statusFilter === "inactive" && !user.isActive);
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const filteredAndSortedUsers = users
+    .filter((user) => {
+      const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && user.isActive) ||
+        (statusFilter === "inactive" && !user.isActive);
+      return matchesSearch && matchesRole && matchesStatus;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "role":
+          comparison = a.role.localeCompare(b.role);
+          break;
+        case "lastLoginAt":
+          comparison =
+            new Date(a.lastLoginAt || 0).getTime() - new Date(b.lastLoginAt || 0).getTime();
+          break;
+        case "createdAt":
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "leads":
+          comparison = (a._count?.assignedLeads || 0) - (b._count?.assignedLeads || 0);
+          break;
+        case "conversionRate":
+          comparison = (a.conversionRate || 0) - (b.conversionRate || 0);
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
 
   if (isLoading) {
     return (
       <div className="p-6 max-w-[1440px] mx-auto">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-[#3BBF7A]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#1A6BFF]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 max-w-[1440px] mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold text-[#1B1F24] tracking-[-0.5px]">
+          <h1 className="text-[32px] font-bold text-[#1B1F24] tracking-[-0.5px]">
             Gestion des utilisateurs
           </h1>
-          <p className="text-body text-[#6B7280] mt-2">
+          <p className="text-[15px] text-[#6B7280] mt-1">
             Gérez les utilisateurs, leurs rôles et leurs autorisations
           </p>
         </div>
-        <Button onClick={handleNewUser} className="rounded-[12px]">
+        <Button
+          onClick={handleNewUser}
+          className="rounded-[12px] bg-[#1A6BFF] hover:bg-[#0F4FCC] shadow-sm hover:shadow-md transition-all duration-200"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un utilisateur
         </Button>
       </div>
 
+      {/* KPI Widgets */}
+      <AdminKpiWidgets />
+
       {/* Filters */}
-      <Card className="border-[#E6E8EB] mb-6">
-        <CardContent className="p-6">
+      <Card className="border-[#E6E8EB] shadow-sm">
+        <CardContent className="p-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-sm font-medium text-[#1B1F24]">Rechercher</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6B7280]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
                 <Input
                   placeholder="Rechercher par email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rounded-[12px]"
+                  className="pl-10 rounded-[12px] border-[#DEE2E6] focus:border-[#1A6BFF] focus:ring-[#1A6BFF]/20"
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-sm font-medium text-[#1B1F24]">Rôle</label>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="rounded-[12px]">
+                <SelectTrigger className="rounded-[12px] border-[#DEE2E6]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,10 +318,10 @@ export default function AdminUsersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-sm font-medium text-[#1B1F24]">Statut</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="rounded-[12px]">
+                <SelectTrigger className="rounded-[12px] border-[#DEE2E6]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -263,74 +336,166 @@ export default function AdminUsersPage() {
       </Card>
 
       {/* Users Table */}
-      <Card className="border-[#E6E8EB]">
-        <CardHeader>
-          <CardTitle className="text-h2 font-semibold text-[#1B1F24]">
-            Utilisateurs ({filteredUsers.length})
+      <Card className="border-[#E6E8EB] shadow-sm overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-[#F8F9FA] to-[#F1F3F5] border-b border-[#E6E8EB]">
+          <CardTitle className="text-lg font-semibold text-[#1B1F24]">
+            Utilisateurs ({filteredAndSortedUsers.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-body text-[#6B7280]">Aucun utilisateur trouvé</p>
+        <CardContent className="p-0">
+          {filteredAndSortedUsers.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#F1F3F5] flex items-center justify-center">
+                <Search className="h-7 w-7 text-[#9CA3AF]" />
+              </div>
+              <p className="text-[15px] text-[#6B7280] font-medium">Aucun utilisateur trouvé</p>
+              <p className="text-sm text-[#9CA3AF] mt-1">
+                Essayez de modifier vos critères de recherche
+              </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Dernière activité</TableHead>
-                  <TableHead>Créé le</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-[#F8F9FA] hover:bg-[#F8F9FA]">
+                  <TableHead className="font-semibold text-[#1B1F24]">
+                    <button
+                      onClick={() => handleSort("email")}
+                      className="flex items-center gap-1 hover:text-[#1A6BFF] transition-colors"
+                    >
+                      Utilisateur
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-[#1B1F24]">
+                    <button
+                      onClick={() => handleSort("role")}
+                      className="flex items-center gap-1 hover:text-[#1A6BFF] transition-colors"
+                    >
+                      Rôle
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-[#1B1F24]">Statut</TableHead>
+                  <TableHead className="font-semibold text-[#1B1F24]">
+                    <button
+                      onClick={() => handleSort("leads")}
+                      className="flex items-center gap-1 hover:text-[#1A6BFF] transition-colors"
+                    >
+                      Leads
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-[#1B1F24]">
+                    <button
+                      onClick={() => handleSort("lastLoginAt")}
+                      className="flex items-center gap-1 hover:text-[#1A6BFF] transition-colors"
+                    >
+                      Dernière activité
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-[#1B1F24]">
+                    <button
+                      onClick={() => handleSort("createdAt")}
+                      className="flex items-center gap-1 hover:text-[#1A6BFF] transition-colors"
+                    >
+                      Créé le
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-[#1B1F24]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                {filteredAndSortedUsers.map((user, index) => (
+                  <TableRow
+                    key={user.id}
+                    className="group hover:bg-[#F8F9FA]/50 transition-colors"
+                    style={{
+                      animationDelay: `${index * 30}ms`,
+                    }}
+                  >
                     <TableCell>
                       <Link
                         href={`/admin/users/${user.id}`}
-                        className="flex items-center gap-3 hover:text-[#3BBF7A] transition-colors"
+                        className="flex items-center gap-3 group/link"
                       >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar || undefined} />
-                          <AvatarFallback className="bg-[#3BBF7A]/10 text-[#3BBF7A] font-semibold">
-                            {getInitials(user.email)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover/link:ring-[#1A6BFF]/20 transition-all">
+                            <AvatarImage src={user.avatar || undefined} />
+                            <AvatarFallback className="bg-gradient-to-br from-[#1A6BFF] to-[#0F4FCC] text-white font-semibold text-sm">
+                              {getInitials(user.email)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div
+                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                              user.isActive ? "bg-[#00D985]" : "bg-[#9CA3AF]"
+                            }`}
+                          />
+                        </div>
                         <div>
-                          <p className="font-medium text-[#1B1F24]">{user.email}</p>
-                          {user._count && (
-                            <p className="text-xs text-[#6B7280]">
-                              {user._count.assignedLeads || 0} leads, {user._count.activities || 0}{" "}
-                              activités
-                            </p>
-                          )}
+                          <p className="font-medium text-[#1B1F24] group-hover/link:text-[#1A6BFF] transition-colors">
+                            {user.email}
+                          </p>
+                          <div className="flex items-center gap-3 mt-0.5">
+                            {user._count && (
+                              <>
+                                <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                                  <Target className="h-3 w-3" />
+                                  {user._count.assignedLeads || 0} leads
+                                </span>
+                                <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                                  <TrendingUp className="h-3 w-3" />
+                                  {user._count.activities || 0} activités
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getRoleColor(user.role)}>
+                      <Badge className={`${getRoleColor(user.role)} border font-medium`}>
                         {getRoleLabel(user.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={user.isActive ? "default" : "secondary"}
-                        className={user.isActive ? "bg-[#3BBF7A] text-white" : ""}
-                      >
-                        {user.isActive ? "Actif" : "Inactif"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={user.isActive}
+                          onCheckedChange={(checked) => handleInlineToggle(user, checked)}
+                          disabled={toggleActiveMutation.isPending}
+                          className="data-[state=checked]:bg-[#00D985]"
+                        />
+                        <span className={`text-sm ${user.isActive ? "text-[#00D985]" : "text-[#9CA3AF]"}`}>
+                          {user.isActive ? "Actif" : "Inactif"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[#1B1F24]">
+                          {user._count?.assignedLeads || 0}
+                        </span>
+                        {user.conversionRate !== undefined && (
+                          <span className="text-xs text-[#00D985]">
+                            {user.conversionRate}% conversion
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.lastLoginAt ? (
-                        <span className="text-sm text-[#6B7280]">
-                          {formatDistanceToNow(new Date(user.lastLoginAt), { addSuffix: true })}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-[#1B1F24]">
+                            {formatDistanceToNow(new Date(user.lastLoginAt), { addSuffix: true })}
+                          </span>
+                          <span className="text-xs text-[#9CA3AF]">
+                            {new Date(user.lastLoginAt).toLocaleDateString("fr-FR")}
+                          </span>
+                        </div>
                       ) : (
-                        <span className="text-sm text-[#9CA3AF]">Jamais connecté</span>
+                        <span className="text-sm text-[#9CA3AF] italic">Jamais connecté</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -341,11 +506,15 @@ export default function AdminUsersPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem onClick={() => handleEdit(user.id)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Modifier
@@ -369,7 +538,7 @@ export default function AdminUsersPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => handleDelete(user)}
-                            className="text-[#EF4444]"
+                            className="text-[#EF4444] focus:text-[#EF4444]"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Supprimer
@@ -401,4 +570,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
