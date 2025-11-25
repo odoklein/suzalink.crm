@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -129,4 +131,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
   }
 }
+
+
 

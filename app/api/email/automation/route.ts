@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { 
+
+export const runtime = "nodejs";
   parseEmailTemplate, 
   calculateNextExecutionTime,
   DEFAULT_EMAIL_TEMPLATES,

@@ -9,6 +9,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 type BulkAction = 
   | "markRead"
   | "markUnread"
@@ -230,5 +232,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
 
 

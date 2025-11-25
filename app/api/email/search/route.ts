@@ -17,6 +17,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 // Search operators for advanced queries
 interface SearchFilters {
   query?: string;
@@ -304,5 +306,7 @@ function highlightText(text: string, query: string): string {
   
   return text.replace(regex, "<mark>$1</mark>");
 }
+
+
 
 

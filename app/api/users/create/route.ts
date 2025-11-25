@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

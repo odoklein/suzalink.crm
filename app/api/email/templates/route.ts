@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_EMAIL_TEMPLATES, validateEmailTemplate } from "@/lib/email-templates";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

@@ -10,6 +10,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { validatePortalSession } from "@/lib/contact-portal-auth";
 
+export const runtime = "nodejs";
+
 const SESSION_COOKIE_NAME = "contact_portal_session";
 
 export async function GET(request: NextRequest) {
@@ -70,5 +72,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
 
 

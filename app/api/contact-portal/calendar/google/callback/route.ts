@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { googleCalendar } from "@/lib/calendar-providers";
 
+export const runtime = "nodejs";
+
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export async function GET(request: NextRequest) {
@@ -76,5 +78,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
 
 

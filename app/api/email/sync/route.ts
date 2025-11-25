@@ -17,6 +17,8 @@ import {
 } from "@/lib/email-queue";
 import { syncUserEmails } from "@/lib/email-sync-v2";
 
+export const runtime = "nodejs";
+
 // GET - Get sync status
 export async function GET(request: NextRequest) {
   try {

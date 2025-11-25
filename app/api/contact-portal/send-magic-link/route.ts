@@ -12,6 +12,8 @@ import { prisma } from "@/lib/prisma";
 import { generateMagicLink } from "@/lib/contact-portal-auth";
 import nodemailer from "nodemailer";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -167,5 +169,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
 
 

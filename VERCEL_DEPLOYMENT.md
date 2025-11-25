@@ -37,7 +37,7 @@ DATABASE_URL=postgresql://user:password@host:5432/database?schema=public
 NEXTAUTH_SECRET=your-secret-key-here  # Generate with: openssl rand -base64 32
 NEXTAUTH_URL=https://your-project.vercel.app
 
-# Public App URL
+# Public App URL (REQUIRED - used for OAuth callbacks and magic links)
 NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 ```
 

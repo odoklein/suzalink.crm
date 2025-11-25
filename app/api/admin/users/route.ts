@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -92,6 +94,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
   }
 }
+
+
 
 
 

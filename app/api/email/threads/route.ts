@@ -9,6 +9,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 // GET - List email threads
 export async function GET(request: NextRequest) {
   try {
@@ -169,5 +171,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
 
 
