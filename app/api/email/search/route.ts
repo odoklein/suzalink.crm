@@ -305,3 +305,4 @@ function highlightText(text: string, query: string): string {
   return text.replace(regex, "<mark>$1</mark>");
 }
 
+
