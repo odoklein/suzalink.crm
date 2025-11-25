@@ -3,7 +3,7 @@
  * Supports both local development (filesystem) and production (Vercel Blob)
  */
 
-import { put, get, del, list } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -41,8 +41,13 @@ export async function uploadFile(
         await del(blob.url);
       },
       async read() {
-        const downloaded = await get(blob.url);
-        return Buffer.from(await downloaded.arrayBuffer());
+        // Fetch the blob directly from its public URL
+        const response = await fetch(blob.url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch blob: ${response.statusText}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
       },
     };
   } else {
@@ -81,9 +86,13 @@ export async function getFile(urlOrPath: string): Promise<Buffer> {
   const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
   
   if (isProduction && urlOrPath.startsWith('https://')) {
-    // Vercel Blob URL
-    const blob = await get(urlOrPath);
-    return Buffer.from(await blob.arrayBuffer());
+    // Vercel Blob URL - fetch directly since it's publicly accessible
+    const response = await fetch(urlOrPath);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blob: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   } else {
     // Local filesystem path
     const fs = await import('fs/promises');
