@@ -5,8 +5,3 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[template.environment]
-  NEXT_PRIVATE_LOCAL_DEV = "true"
-
-[build.environment]
-  NEXT_FORCE_DYNAMIC_APP = "true"

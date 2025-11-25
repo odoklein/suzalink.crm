@@ -5,11 +5,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Ignore ESLint errors during build
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
