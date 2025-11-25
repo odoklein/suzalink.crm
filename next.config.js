@@ -12,7 +12,8 @@ const nextConfig = {
   },
 
   // Vercel optimizations
-  output: 'standalone', // Optimized for Vercel deployment
+  // Note: 'standalone' output is not recommended for Vercel as it can cause issues with Prisma binaries
+  // Vercel uses serverless functions which handle dependencies differently
   poweredByHeader: false, // Remove X-Powered-By header for security
 };
 

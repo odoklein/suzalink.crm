@@ -190,9 +190,17 @@ The build includes Prisma generation, which may take 1-2 minutes. This is normal
 
 ### Prisma Client Errors
 
+**Error: "Prisma Client could not locate the Query Engine for runtime 'rhel-openssl-3.0.x'"**
+
+This error occurs when Prisma Client doesn't have the correct binary for Vercel's Linux runtime. This has been fixed by:
+1. ✅ Adding `binaryTargets = ["native", "rhel-openssl-3.0.x"]` to `prisma/schema.prisma`
+2. ✅ Adding `postinstall` script to ensure Prisma generates after `npm install`
+
+If you still see this error:
 1. Ensure `prisma generate` runs during build (already in build command)
-2. Check Prisma schema is valid
-3. Verify database migrations are applied
+2. Check that `prisma/schema.prisma` includes the binary targets
+3. Clear Vercel build cache and redeploy
+4. Verify database migrations are applied
 
 ## Continuous Deployment
 
