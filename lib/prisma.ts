@@ -1,18 +1,26 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Prisma 7: Connection URL is now passed via environment variable
-// The adapter or connection string is configured in prisma.config.ts for migrations
-// For the client, we can still pass the URL directly or use an adapter
+// Prisma 7 requires an adapter or accelerateUrl
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
+
+// Create PostgreSQL adapter
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-    // In Prisma 7, DATABASE_URL from environment is used automatically
-    // If you need to override, you can use adapter or datasources
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
