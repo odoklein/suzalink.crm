@@ -1,0 +1,41 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="60" cy="60" r="50" fill="url(#completedGrad)" opacity="0.1"/>
+  
+  <!-- Clipboard with checkmarks -->
+  <g transform="translate(30, 20)">
+    <rect x="8" y="12" width="44" height="60" rx="6" fill="#D1FAE5" stroke="#34D399" stroke-width="1.5"/>
+    <rect x="18" y="5" width="24" height="14" rx="4" fill="#10B981"/>
+    <circle cx="30" cy="12" r="4" fill="white"/>
+    
+    <!-- Check items -->
+    <rect x="16" y="30" width="10" height="10" rx="2" fill="#10B981"/>
+    <path d="M18 35L21 38L26 33" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="32" y="32" width="16" height="6" rx="2" fill="#A7F3D0"/>
+    
+    <rect x="16" y="46" width="10" height="10" rx="2" fill="#10B981"/>
+    <path d="M18 51L21 54L26 49" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="32" y="48" width="12" height="6" rx="2" fill="#A7F3D0"/>
+    
+    <rect x="16" y="62" width="10" height="10" rx="2" fill="#10B981"/>
+    <path d="M18 67L21 70L26 65" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="32" y="64" width="14" height="6" rx="2" fill="#A7F3D0"/>
+  </g>
+  
+  <!-- Trophy sparkle -->
+  <g transform="translate(75, 65)">
+    <path d="M10 0L12 7L19 9L12 11L10 18L8 11L1 9L8 7L10 0Z" fill="#FBBF24" opacity="0.8"/>
+  </g>
+  
+  <!-- Sparkles -->
+  <circle cx="22" cy="90" r="3" fill="#6EE7B7" opacity="0.6"/>
+  <circle cx="95" cy="25" r="2" fill="#6EE7B7" opacity="0.5"/>
+  
+  <defs>
+    <linearGradient id="completedGrad" x1="10" y1="10" x2="110" y2="110">
+      <stop stop-color="#10B981"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+</svg>
+

@@ -1,0 +1,462 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ============================================
+       SUZALINK BRAND COLOR SYSTEM - Light Mode
+       Derived from logo color #1A6BFF
+       ============================================ */
+    
+    /* 1. Core Brand Palette - Primary (SuzaLink Blue) */
+    --primary-50: #E7F0FF;
+    --primary-100: #CFE0FF;
+    --primary-200: #A8C8FF;
+    --primary-300: #7FAFFF;
+    --primary-400: #4E8EFF;
+    --primary-500: #1A6BFF;    /* Main brand color (Logo) */
+    --primary-600: #0F4FCC;
+    --primary-700: #093799;
+    --primary-800: #052266;
+    --primary-900: #021033;
+    
+    /* 2. Secondary Palette - Gray (High-Contrast Neutral System) */
+    --gray-0: #FFFFFF;
+    --gray-50: #F8F9FA;
+    --gray-100: #F1F3F5;
+    --gray-200: #E9ECEF;
+    --gray-300: #DEE2E6;
+    --gray-400: #CED4DA;
+    --gray-500: #ADB5BD;
+    --gray-600: #6C757D;
+    --gray-700: #495057;
+    --gray-800: #343A40;
+    --gray-900: #1E1E1E;
+    --gray-1000: #0C0C0C;    /* Black mode base */
+    
+    /* 3. Complementary Accent Color */
+    --accent-500: #FF6B4A;    /* Complementary to blue */
+    --accent-600: #CC543A;
+    --accent-700: #993F2C;
+    
+    /* 4. Semantic Colors - Success */
+    --success-50: #E9FFF4;
+    --success-300: #7AF3C3;
+    --success-500: #00D985;
+    --success-700: #00945C;
+    
+    /* 5. Semantic Colors - Warning */
+    --warning-50: #FFF8E6;
+    --warning-300: #FFD26A;
+    --warning-500: #FFAA00;
+    --warning-700: #A66D00;
+    
+    /* 6. Semantic Colors - Error */
+    --error-50: #FFE8E8;
+    --error-300: #FF7474;
+    --error-500: #FF3B3B;
+    --error-700: #B00000;
+    
+    /* 7. Foreground / Background Pairs - Light Mode */
+    --bg-primary: var(--gray-0);
+    --bg-secondary: var(--gray-0);
+    --bg-tertiary: var(--gray-100);
+    
+    --fg-primary: var(--gray-900);
+    --fg-secondary: var(--gray-700);
+    --fg-tertiary: var(--gray-600);
+    
+    --fg-on-primary: var(--gray-0);    /* text on primary blue */
+    --fg-on-secondary: var(--gray-900);
+    
+    --border-default: var(--gray-300);
+    --border-strong: var(--gray-400);
+    
+    /* 8. Component States - Buttons */
+    /* Primary Button */
+    --btn-primary-bg: var(--primary-500);
+    --btn-primary-color: var(--gray-0);
+    --btn-primary-hover: var(--primary-600);
+    --btn-primary-active: var(--primary-700);
+    --btn-primary-disabled-bg: var(--gray-300);
+    --btn-primary-disabled-color: var(--gray-500);
+    
+    /* Secondary Button */
+    --btn-secondary-bg: var(--gray-100);
+    --btn-secondary-color: var(--gray-900);
+    --btn-secondary-hover: var(--gray-200);
+    --btn-secondary-active: var(--gray-300);
+    --btn-secondary-disabled-bg: var(--gray-100);
+    --btn-secondary-disabled-color: var(--gray-400);
+    
+    /* Outline Button */
+    --btn-outline-border: var(--gray-300);
+    --btn-outline-hover-border: var(--gray-400);
+    --btn-outline-active-border: var(--gray-500);
+    --btn-outline-disabled-border: var(--gray-200);
+    
+    /* 9. Navigation & Active States */
+    --nav-link-default: var(--gray-700);
+    --nav-link-hover: var(--primary-500);
+    --nav-link-active: var(--primary-600);
+    
+    /* Tabs */
+    --tab-active-bg: var(--primary-50);
+    --tab-active-border: var(--primary-500);
+    --tab-inactive: var(--gray-200);
+    
+    /* 10. Shadows & Elevation */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.10);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.12);
+    
+    /* 11. Radius System */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --radius-full: 999px;
+    
+    /* 12. Opacity Tokens */
+    --opacity-hover: 0.90;
+    --opacity-pressed: 0.80;
+    --opacity-disabled: 0.45;
+    --opacity-muted: 0.65;
+    
+    /* Legacy Support - Map to new system for backward compatibility */
+    --color-primary: var(--primary-500);
+    --color-primary-500: var(--primary-500);
+    --color-primary-100: var(--primary-100);
+    --color-primary-20: var(--primary-200);
+    --color-primary-5: var(--primary-50);
+    --color-primary-text: var(--fg-on-primary);
+    --color-primary-hover: var(--primary-600);
+    
+    --color-text-87: var(--fg-primary);
+    --color-text-60: var(--fg-secondary);
+    --color-text-38: var(--fg-tertiary);
+    --color-text-main: var(--fg-primary);
+    --color-text-body: var(--fg-secondary);
+    --color-text-light: var(--fg-tertiary);
+    
+    --color-bg-main: var(--bg-primary);
+    --color-bg-panel: var(--bg-secondary);
+    --color-bg-surface: var(--bg-secondary);
+    --color-bg-sidebar: var(--bg-secondary);
+    --color-border: var(--border-default);
+    --color-border-light: var(--border-default);
+    
+    --color-success: var(--success-500);
+    --color-success-30: var(--success-300);
+    --color-success-9: var(--success-50);
+    --color-success-500: var(--success-500);
+    --color-success-100: var(--success-300);
+    --color-success-text: var(--fg-primary);
+    
+    --color-warning: var(--warning-500);
+    --color-warning-30: var(--warning-300);
+    --color-warning-9: var(--warning-50);
+    --color-warning-500: var(--warning-500);
+    --color-warning-100: var(--warning-300);
+    
+    --color-error: var(--error-500);
+    --color-error-20: var(--error-300);
+    --color-error-5: var(--error-50);
+    --color-danger-500: var(--error-500);
+    --color-danger-100: var(--error-300);
+    --color-danger-text: var(--fg-primary);
+    
+    --color-info-500: var(--primary-500);
+    --color-info-light: var(--primary-50);
+    
+    /* Status Colors - Jeans (Muted Blue) - Keep for compatibility */
+    --color-jeans: #51748E;
+    --color-jeans-30: rgba(81, 116, 142, 0.3);
+    --color-jeans-9: rgba(81, 116, 142, 0.09);
+    
+    /* Highlight Colors - Keep for compatibility */
+    --color-highlight-bk: rgba(255, 122, 69, 0.87);
+    --color-highlight-ck: rgba(250, 219, 20, 0.87);
+    --color-highlight-sk: rgba(255, 94, 215, 0.87);
+
+    /* Chart Colors - Keep existing */
+    --chart-blue: #4C85FF;
+    --chart-orange: #FFA445;
+    --chart-purple: #A46CFF;
+    --chart-pink: #FF6D9D;
+    --chart-teal: #20C4B5;
+    --chart-green: #44CC77;
+
+    /* Typography - Inter Font */
+    --font-family-sans: 'Inter', sans-serif;
+    --font-size-h1: 28px;
+    --font-weight-h1: 600;
+    --line-height-h1: 36px;
+    --font-size-h2: 20px;
+    --font-weight-h2: 600;
+    --line-height-h2: 28px;
+    --font-size-kpi: 28px;
+    --font-weight-kpi: 600;
+    --font-size-body: 14px;
+    --font-weight-body: 400;
+    --line-height-body: 20px;
+    --font-size-body-sm: 14px;
+    --font-weight-body-sm: 500;
+    --font-size-caption: 12px;
+    --font-weight-caption: 400;
+    --color-caption: var(--fg-secondary);
+
+    /* Shape & Layout - Design System */
+    --radius-card: var(--radius-lg);
+    --radius-button: var(--radius-lg);
+    --radius-pill: var(--radius-full);
+    --radius-bar-top: var(--radius-sm);
+
+    /* Spacing - 8-point grid */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+
+    /* Shadow System - Map to new system */
+    --shadow-card: var(--shadow-sm);
+    --shadow-float: var(--shadow-md);
+    --shadow-glow: 0 0px 15px rgba(26, 107, 255, 0.2);
+
+    /* Drawer System - Quick Actions */
+    --drawer-bg: #ffffff;
+    --drawer-radius: 20px;
+    --drawer-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    --drawer-backdrop: rgba(0, 0, 0, 0.35);
+    --drawer-max-width: 480px;
+    --drawer-margin: 24px;
+    --drawer-duration: 320ms;
+    --drawer-ease: cubic-bezier(0.24, 0.8, 0.32, 1);
+  }
+
+  /* ============================================
+     SUZALINK BRAND COLOR SYSTEM - Dark Mode
+     ============================================ */
+  .dark {
+    /* Primary palette remains the same */
+    --primary-50: #E7F0FF;
+    --primary-100: #CFE0FF;
+    --primary-200: #A8C8FF;
+    --primary-300: #7FAFFF;
+    --primary-400: #4E8EFF;
+    --primary-500: #1A6BFF;    /* Main brand color (Logo) */
+    --primary-600: #0F4FCC;
+    --primary-700: #093799;
+    --primary-800: #052266;
+    --primary-900: #021033;
+    
+    /* Gray system remains the same */
+    --gray-0: #FFFFFF;
+    --gray-50: #F8F9FA;
+    --gray-100: #F1F3F5;
+    --gray-200: #E9ECEF;
+    --gray-300: #DEE2E6;
+    --gray-400: #CED4DA;
+    --gray-500: #ADB5BD;
+    --gray-600: #6C757D;
+    --gray-700: #495057;
+    --gray-800: #343A40;
+    --gray-900: #1E1E1E;
+    --gray-1000: #0C0C0C;
+    
+    /* Accent colors remain the same */
+    --accent-500: #FF6B4A;
+    --accent-600: #CC543A;
+    --accent-700: #993F2C;
+    
+    /* Semantic colors remain the same */
+    --success-50: #E9FFF4;
+    --success-300: #7AF3C3;
+    --success-500: #00D985;
+    --success-700: #00945C;
+    
+    --warning-50: #FFF8E6;
+    --warning-300: #FFD26A;
+    --warning-500: #FFAA00;
+    --warning-700: #A66D00;
+    
+    --error-50: #FFE8E8;
+    --error-300: #FF7474;
+    --error-500: #FF3B3B;
+    --error-700: #B00000;
+    
+    /* Foreground / Background Pairs - Dark Mode */
+    --bg-primary: var(--gray-1000);
+    --bg-secondary: var(--gray-900);
+    --bg-tertiary: var(--gray-800);
+    
+    --fg-primary: var(--gray-0);
+    --fg-secondary: var(--gray-200);
+    --fg-tertiary: var(--gray-400);
+    
+    --fg-on-primary: var(--gray-0);
+    --fg-on-secondary: var(--gray-0);
+    
+    --border-default: var(--gray-700);
+    --border-strong: var(--gray-500);
+    
+    /* Component States - Buttons (same structure, different values) */
+    --btn-primary-bg: var(--primary-500);
+    --btn-primary-color: var(--gray-0);
+    --btn-primary-hover: var(--primary-600);
+    --btn-primary-active: var(--primary-700);
+    --btn-primary-disabled-bg: var(--gray-700);
+    --btn-primary-disabled-color: var(--gray-500);
+    
+    --btn-secondary-bg: var(--gray-800);
+    --btn-secondary-color: var(--gray-0);
+    --btn-secondary-hover: var(--gray-700);
+    --btn-secondary-active: var(--gray-600);
+    --btn-secondary-disabled-bg: var(--gray-800);
+    --btn-secondary-disabled-color: var(--gray-600);
+    
+    --btn-outline-border: var(--gray-700);
+    --btn-outline-hover-border: var(--gray-500);
+    --btn-outline-active-border: var(--gray-400);
+    --btn-outline-disabled-border: var(--gray-800);
+    
+    /* Navigation & Active States */
+    --nav-link-default: var(--gray-200);
+    --nav-link-hover: var(--primary-500);
+    --nav-link-active: var(--primary-600);
+    
+    /* Tabs */
+    --tab-active-bg: rgba(26, 107, 255, 0.14);
+    --tab-active-border: var(--primary-500);
+    --tab-inactive: var(--gray-800);
+    
+    /* Shadows - Enhanced for dark mode */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.7);
+    
+    /* Radius system remains the same */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --radius-full: 999px;
+    
+    /* Opacity tokens remain the same */
+    --opacity-hover: 0.90;
+    --opacity-pressed: 0.80;
+    --opacity-disabled: 0.45;
+    --opacity-muted: 0.65;
+    
+    /* Legacy Support - Map to new system for backward compatibility */
+    --color-primary: var(--primary-500);
+    --color-primary-500: var(--primary-500);
+    --color-primary-100: var(--primary-100);
+    --color-primary-20: rgba(26, 107, 255, 0.3);
+    --color-primary-5: rgba(26, 107, 255, 0.14);
+    --color-primary-text: var(--fg-on-primary);
+    --color-primary-hover: var(--primary-600);
+    
+    --color-text-87: var(--fg-primary);
+    --color-text-60: var(--fg-secondary);
+    --color-text-38: var(--fg-tertiary);
+    --color-text-main: var(--fg-primary);
+    --color-text-body: var(--fg-secondary);
+    --color-text-light: var(--fg-tertiary);
+    
+    --color-bg-main: var(--bg-primary);
+    --color-bg-panel: var(--bg-secondary);
+    --color-bg-surface: var(--bg-secondary);
+    --color-bg-sidebar: var(--bg-secondary);
+    --color-border: var(--border-default);
+    --color-border-light: var(--border-default);
+    
+    --color-success: var(--success-500);
+    --color-success-30: var(--success-300);
+    --color-success-9: rgba(0, 217, 133, 0.14);
+    --color-success-500: var(--success-500);
+    --color-success-100: var(--success-300);
+    --color-success-text: var(--fg-primary);
+    
+    --color-warning: var(--warning-500);
+    --color-warning-30: var(--warning-300);
+    --color-warning-9: rgba(255, 170, 0, 0.14);
+    --color-warning-500: var(--warning-500);
+    --color-warning-100: var(--warning-300);
+    
+    --color-error: var(--error-500);
+    --color-error-20: var(--error-300);
+    --color-error-5: rgba(255, 59, 59, 0.14);
+    --color-danger-500: var(--error-500);
+    --color-danger-100: var(--error-300);
+    --color-danger-text: var(--fg-primary);
+    
+    --color-info-500: var(--primary-500);
+    --color-info-light: rgba(26, 107, 255, 0.14);
+    
+    /* Status Colors - Jeans (Muted Blue) - Keep for compatibility */
+    --color-jeans: #51748E;
+    --color-jeans-30: rgba(81, 116, 142, 0.3);
+    --color-jeans-9: rgba(81, 116, 142, 0.14);
+    
+    /* Highlight Colors - Keep for compatibility */
+    --color-highlight-bk: rgba(255, 122, 69, 0.87);
+    --color-highlight-ck: rgba(250, 219, 20, 0.87);
+    --color-highlight-sk: rgba(255, 94, 215, 0.87);
+    
+    /* Shadow System - Map to new system */
+    --shadow-card: var(--shadow-sm);
+    --shadow-float: var(--shadow-md);
+    --shadow-glow: 0 0px 15px rgba(26, 107, 255, 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family-sans);
+    letter-spacing: -0.01em;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.5px;
+  }
+}
+
+/* Custom Scrollbar Styles */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+  }
+  
+  .scrollbar-thumb-gray-200::-webkit-scrollbar-thumb {
+    background: #E5E7EB;
+  }
+  
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+

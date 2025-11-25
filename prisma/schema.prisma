@@ -1,0 +1,965 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  BD
+  DEVELOPER
+}
+
+enum CampaignStatus {
+  Draft
+  Active
+  Paused
+}
+
+enum LeadStatus {
+  New
+  Locked
+  Contacted
+  Qualified
+  Nurture
+  Lost
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  NOTE
+  STATUS_CHANGE
+}
+
+enum ContractStatus {
+  Active
+  Inactive
+  Pending
+}
+
+enum ProjectStatus {
+  Planning
+  InProgress
+  OnHold
+  Completed
+  Cancelled
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  projects     Project[]
+  conversations Conversation[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  role           UserRole @default(BD)
+  avatar         String?
+  organizationId String   @map("organization_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  permissions    Json?    // Custom permissions override (JSON object with permission flags)
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  emailSettings Json? @map("email_settings") // Deprecated - use EmailAccount instead
+
+  organization        Organization         @relation(fields: [organizationId], references: [id])
+  emailAccounts       EmailAccount[]       // User's configured email accounts
+  assignedLeads       Lead[]               @relation("AssignedBD")
+  lockedLeads         Lead[]               @relation("LockedBy")
+  activities          ActivityLog[]
+  emailThreads        EmailThread[]
+  sessions            Session[]
+  notifications       Notification[]
+  tasks               Task[]
+  emailTemplates      EmailTemplate[]
+  emailSequences       EmailSequence[]
+  campaignAssignments  CampaignAssignment[]
+  accountAssignments   AccountAssignment[]
+  calendarIntegrations CalendarIntegration[]
+  bookings             Booking[]
+  uploadedFiles        AccountFile[]
+  ownedProjects        Project[]            @relation("ProjectOwner")
+  projectMemberships   ProjectMember[]
+  createdConversations Conversation[]      @relation("ConversationCreator")
+  conversationParticipants ConversationParticipant[]
+  sentMessages         Message[]
+  messageReactions      MessageReaction[]
+  
+  // New email system relations
+  emails              Email[]
+  emailLabels         EmailLabel[]
+  emailSyncStates     EmailSyncState[]
+  
+  // Contact portal bookings
+  contactBookings     ContactBooking[]
+
+  @@map("users")
+}
+
+model Account {
+  id             String         @id @default(uuid())
+  companyName    String         @map("company_name")
+  logoUrl        String?        @map("logo_url")
+  contractStatus ContractStatus @default(Pending) @map("contract_status")
+  guestToken     String         @unique @default(uuid()) @map("guest_token")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  campaigns      Campaign[]
+  interlocuteurs Interlocuteur[]
+  assignedBDs    AccountAssignment[]
+  files          AccountFile[]
+
+  @@map("accounts")
+}
+
+model Interlocuteur {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  name      String
+  email     String?
+  phone     String?
+  position  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Portal access fields
+  portalEnabled     Boolean   @default(false) @map("portal_enabled")
+  portalToken       String?   @unique @map("portal_token") // Magic link token
+  portalTokenExpiry DateTime? @map("portal_token_expiry")
+  lastPortalAccess  DateTime? @map("last_portal_access")
+
+  account              Account                      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  calendarIntegrations ContactCalendarIntegration[]
+  availabilitySlots    ContactAvailability[]
+  contactBookings      ContactBooking[]
+
+  @@map("interlocuteurs")
+}
+
+model Campaign {
+  id           String         @id @default(uuid())
+  accountId    String         @map("account_id")
+  name         String
+  status       CampaignStatus @default(Draft)
+  startDate    DateTime?      @map("start_date")
+  schemaConfig Json?          @map("schema_config") // JSONB: Array of {key, label, type}
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  account     Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+  tasks       Task[]
+  assignedBDs CampaignAssignment[]
+
+  @@index([accountId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+model Lead {
+  id             String     @id @default(uuid())
+  campaignId     String     @map("campaign_id")
+  status         LeadStatus @default(New)
+  assignedBdId   String?    @map("assigned_bd_id")
+  standardData   Json       @map("standard_data") // JSONB: {firstName, lastName, email, phone, jobTitle}
+  customData     Json?      @map("custom_data") // JSONB: Dynamic fields based on schema_config
+  lockedAt       DateTime?  @map("locked_at")
+  lockedByUserId String?    @map("locked_by_user_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  assignedBD   User?         @relation("AssignedBD", fields: [assignedBdId], references: [id])
+  lockedByUser User?         @relation("LockedBy", fields: [lockedByUserId], references: [id])
+  activities   ActivityLog[]
+  emailThreads EmailThread[]
+  tasks        Task[]
+  bookings     Booking[]
+  emails       Email[]       // New email system relation
+
+  @@index([campaignId])
+  @@index([status])
+  @@index([lockedAt])
+  @@index([assignedBdId])
+  @@map("leads")
+}
+
+model ActivityLog {
+  id        String       @id @default(uuid())
+  leadId    String       @map("lead_id")
+  userId    String       @map("user_id")
+  type      ActivityType
+  metadata  Json? // JSONB: Stores call duration, recording URL, email body, etc.
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model EmailThread {
+  id         String   @id @default(uuid())
+  leadId     String   @map("lead_id")
+  userId     String   @map("user_id")
+  subject    String
+  body       String   @db.Text
+  fromEmail  String   @map("from_email")
+  toEmail    String   @map("to_email")
+  receivedAt DateTime @map("received_at")
+  threadId   String?  @map("thread_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([threadId])
+  @@index([receivedAt])
+  @@map("email_threads")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@map("sessions")
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  type        String // 'lead_assigned', 'lead_qualified', 'email_opened', etc.
+  title       String
+  message     String    @db.Text
+  data        Json? // Additional data for the notification
+  isRead      Boolean   @default(false) @map("is_read")
+  priority    String    @default("medium") // 'low', 'medium', 'high', 'urgent'
+  actionUrl   String?   @map("action_url")
+  actionLabel String?   @map("action_label")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  readAt      DateTime? @map("read_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  leadId      String?   @map("lead_id")
+  campaignId  String?   @map("campaign_id")
+  projectId   String?   @map("project_id")
+  title       String
+  description String?   @db.Text
+  type        String // 'call', 'email', 'meeting', 'follow_up', 'demo', 'proposal', 'custom'
+  status      String    @default("pending") // 'pending', 'in_progress', 'completed', 'cancelled', 'overdue'
+  priority    String    @default("medium") // 'low', 'medium', 'high', 'urgent'
+  dueDate     DateTime  @map("due_date")
+  completedAt DateTime? @map("completed_at")
+  metadata    Json? // Additional task data like duration, notes, etc.
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([campaignId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  subject   String
+  content   String   @db.Text
+  variables Json? // Available template variables
+  category  String   @default("general") // 'general', 'follow_up', 'welcome', 'nurture', etc.
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sequences EmailSequenceStep[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([isActive])
+  @@map("email_templates")
+}
+
+model EmailSequence {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  triggerType String   @map("trigger_type") // 'lead_status', 'time_based', 'manual'
+  triggerData Json?    @map("trigger_data") // Trigger configuration
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps EmailSequenceStep[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([triggerType])
+  @@map("email_sequences")
+}
+
+model EmailSequenceStep {
+  id         String   @id @default(uuid())
+  sequenceId String   @map("sequence_id")
+  templateId String   @map("template_id")
+  stepOrder  Int      @map("step_order")
+  delayDays  Int      @default(0) @map("delay_days")
+  delayHours Int      @default(0) @map("delay_hours")
+  conditions Json? // Conditions for this step to execute
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  sequence EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  template EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId])
+  @@index([templateId])
+  @@index([stepOrder])
+  @@map("email_sequence_steps")
+}
+
+model CampaignAssignment {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  userId     String   @map("user_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") // User ID who made the assignment
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@map("campaign_assignments")
+}
+
+model AccountAssignment {
+  id         String   @id @default(uuid())
+  accountId  String   @map("account_id")
+  userId     String   @map("user_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") // User ID who made the assignment
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, userId])
+  @@index([accountId])
+  @@index([userId])
+  @@map("account_assignments")
+}
+
+model CalendarIntegration {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  provider      String // 'google', 'apple', 'outlook'
+  accessToken   String   @map("access_token") @db.Text // Encrypted
+  refreshToken  String?  @map("refresh_token") @db.Text // Encrypted
+  tokenExpiry   DateTime? @map("token_expiry")
+  email         String // Calendar email address
+  isActive      Boolean  @default(true) @map("is_active")
+  syncEnabled   Boolean  @default(true) @map("sync_enabled")
+  lastSyncAt    DateTime? @map("last_sync_at")
+  metadata      Json? // Provider-specific metadata
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, email])
+  @@index([userId])
+  @@index([provider])
+  @@index([isActive])
+  @@map("calendar_integrations")
+}
+
+model Booking {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  leadId            String?   @map("lead_id")
+  title             String
+  description       String?   @db.Text
+  startTime         DateTime  @map("start_time")
+  endTime           DateTime  @map("end_time")
+  location          String? // Physical location or video call link
+  meetingType       String    @default("meeting") @map("meeting_type") // 'call', 'meeting', 'demo', 'follow_up'
+  status            String    @default("scheduled") // 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
+  attendees         Json? // Array of {name, email, status}
+  reminders         Json? // Array of reminder configurations
+  externalEventId   String?   @map("external_event_id") // Google Calendar event ID, etc.
+  externalProvider  String?   @map("external_provider") // 'google', 'apple', etc.
+  lastSyncedAt      DateTime? @map("last_synced_at")
+  metadata          Json? // Additional meeting data
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([status])
+  @@index([externalEventId])
+  @@map("bookings")
+}
+
+model AccountFile {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  uploadedBy  String   @map("uploaded_by")
+  fileName    String   @map("file_name")
+  fileSize    Int      @map("file_size") // Size in bytes
+  mimeType    String   @map("mime_type")
+  fileUrl     String   @map("file_url") @db.Text // Path or URL to file
+  description String?  @db.Text
+  isPublic    Boolean  @default(false) @map("is_public") // Visible in guest portal
+  category    String   @default("general") // 'contract', 'report', 'presentation', 'general'
+  metadata    Json? // Additional file metadata
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  account    Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  uploader   User    @relation(fields: [uploadedBy], references: [id])
+
+  @@index([accountId])
+  @@index([uploadedBy])
+  @@index([isPublic])
+  @@index([category])
+  @@map("account_files")
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  name          String
+  description   String?       @db.Text
+  status        ProjectStatus @default(Planning)
+  ownerId       String        @map("owner_id")
+  organizationId String        @map("organization_id")
+  startDate     DateTime?     @map("start_date")
+  endDate       DateTime?     @map("end_date")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  owner       User          @relation("ProjectOwner", fields: [ownerId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  members     ProjectMember[]
+  tasks       Task[]
+
+  @@index([ownerId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  userId    String   @map("user_id")
+  role      String   @default("member") // 'owner', 'member', 'viewer'
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model Conversation {
+  id            String          @id @default(uuid())
+  type          ConversationType @default(DIRECT)
+  name          String? // For group channels
+  organizationId String          @map("organization_id")
+  createdById   String          @map("created_by_id")
+  pinnedMessageId String?        @map("pinned_message_id")
+  archivedAt    DateTime?       @map("archived_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  organization  Organization    @relation(fields: [organizationId], references: [id])
+  createdBy     User            @relation("ConversationCreator", fields: [createdById], references: [id])
+  participants  ConversationParticipant[]
+  messages      Message[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([archivedAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  userId         String       @map("user_id")
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+  lastReadAt     DateTime?    @map("last_read_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  userId         String       @map("user_id")
+  content        String       @db.Text
+  editedAt       DateTime?    @map("edited_at")
+  deletedAt      DateTime?    @map("deleted_at")
+  replyToId      String?      @map("reply_to_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]    @relation("MessageReplies")
+  attachments    MessageAttachment[]
+  reactions      MessageReaction[]
+
+  @@index([conversationId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([replyToId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id          String   @id @default(uuid())
+  messageId   String?  @map("message_id") // Optional - can be set after message creation
+  fileName    String   @map("file_name")
+  fileUrl     String   @map("file_url") @db.Text
+  fileType    String   @map("file_type") // image, pdf, document, etc.
+  fileSize    Int      @map("file_size") // bytes
+  thumbnailUrl String?  @map("thumbnail_url") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  message Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  emoji     String   // Unicode emoji or shortcode
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reactions")
+}
+
+// ============================================
+// CONTACT PORTAL & CALENDAR INTEGRATION
+// ============================================
+
+// Calendar integration for contact portal
+model ContactCalendarIntegration {
+  id           String    @id @default(uuid())
+  contactId    String    @map("contact_id")
+  provider     String    // 'google', 'outlook'
+  accessToken  String    @map("access_token") @db.Text
+  refreshToken String?   @map("refresh_token") @db.Text
+  tokenExpiry  DateTime? @map("token_expiry")
+  email        String
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, provider])
+  @@index([contactId])
+  @@map("contact_calendar_integrations")
+}
+
+// Availability slots set by contacts
+model ContactAvailability {
+  id           String    @id @default(uuid())
+  contactId    String    @map("contact_id")
+  dayOfWeek    Int       @map("day_of_week") // 0-6 (Sunday-Saturday)
+  startTime    String    @map("start_time") // "09:00" format
+  endTime      String    @map("end_time") // "17:00" format
+  timezone     String    @default("Europe/Paris")
+  isRecurring  Boolean   @default(true) @map("is_recurring")
+  specificDate DateTime? @map("specific_date") // For one-time availability
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([dayOfWeek])
+  @@map("contact_availability")
+}
+
+// Bookings made by team members with contacts
+model ContactBooking {
+  id          String   @id @default(uuid())
+  contactId   String   @map("contact_id")
+  userId      String   @map("user_id") // Team member who booked
+  title       String
+  description String?  @db.Text
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  status      String   @default("pending") // 'pending', 'confirmed', 'cancelled', 'completed'
+  notes       String?  @db.Text
+  meetingLink String?  @map("meeting_link")
+  location    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id])
+
+  @@index([contactId])
+  @@index([userId])
+  @@index([startTime])
+  @@index([status])
+  @@map("contact_bookings")
+}
+
+// ============================================
+// EMAIL ACCOUNT CONFIGURATION
+// ============================================
+
+// Stores user email account configurations (IMAP/SMTP)
+model EmailAccount {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  
+  // Account identification
+  name            String    // Display name (e.g., "Work Email", "Personal")
+  email           String    // Email address for this account
+  provider        String    @default("custom") // 'gmail', 'outlook', 'custom'
+  isDefault       Boolean   @default(false) @map("is_default")
+  isActive        Boolean   @default(true) @map("is_active")
+  
+  // IMAP Configuration (encrypted in app layer)
+  imapHost        String    @map("imap_host")
+  imapPort        Int       @default(993) @map("imap_port")
+  imapUser        String    @map("imap_user")
+  imapPassword    String    @map("imap_password") @db.Text // Encrypted
+  imapSsl         Boolean   @default(true) @map("imap_ssl")
+  
+  // SMTP Configuration (encrypted in app layer)
+  smtpHost        String    @map("smtp_host")
+  smtpPort        Int       @default(587) @map("smtp_port")
+  smtpUser        String    @map("smtp_user")
+  smtpPassword    String    @map("smtp_password") @db.Text // Encrypted
+  smtpSsl         Boolean   @default(false) @map("smtp_ssl")
+  smtpTls         Boolean   @default(true) @map("smtp_tls")
+  
+  // Sync configuration
+  syncEnabled     Boolean   @default(true) @map("sync_enabled")
+  syncInterval    Int       @default(5) @map("sync_interval") // Minutes
+  
+  // Status tracking
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastSyncStatus  String?   @map("last_sync_status") // 'success', 'error'
+  lastSyncError   String?   @map("last_sync_error") @db.Text
+  
+  // Timestamps
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, email])
+  @@index([userId])
+  @@index([isActive])
+  @@map("email_accounts")
+}
+
+// ============================================
+// NEW EMAIL SYSTEM - Scalable Email Infrastructure
+// ============================================
+
+// Core email storage - denormalized for read performance
+model Email {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  accountEmail    String    @map("account_email") // User's configured email address
+  
+  // Message identifiers (RFC 5322)
+  messageId       String    @map("message_id")  // RFC 5322 Message-ID header
+  inReplyTo       String?   @map("in_reply_to") // Parent message ID for threading
+  references      String[]  @default([])         // All ancestor message IDs
+  
+  // Thread grouping
+  threadId        String    @map("thread_id")   // Computed thread identifier
+  threadPosition  Int       @default(0) @map("thread_position")
+  
+  // Envelope data
+  subject         String
+  fromAddress     String    @map("from_address")
+  fromName        String?   @map("from_name")
+  toAddresses     Json      @map("to_addresses")   // Array of {email, name}
+  ccAddresses     Json?     @map("cc_addresses")   // Array of {email, name}
+  bccAddresses    Json?     @map("bcc_addresses")  // Array of {email, name}
+  replyToAddress  String?   @map("reply_to_address")
+  
+  // Content
+  bodyPlain       String?   @map("body_plain") @db.Text
+  bodyHtml        String?   @map("body_html") @db.Text
+  snippet         String?   // First 200 chars for preview
+  
+  // Metadata
+  size            Int       @default(0) // Size in bytes
+  hasAttachments  Boolean   @default(false) @map("has_attachments")
+  importance      String    @default("normal") // 'low', 'normal', 'high'
+  
+  // Status flags
+  isRead          Boolean   @default(false) @map("is_read")
+  isStarred       Boolean   @default(false) @map("is_starred")
+  isArchived      Boolean   @default(false) @map("is_archived")
+  isDraft         Boolean   @default(false) @map("is_draft")
+  isSent          Boolean   @default(false) @map("is_sent")
+  isSpam          Boolean   @default(false) @map("is_spam")
+  isTrash         Boolean   @default(false) @map("is_trash")
+  
+  // Folder information
+  folder          String    @default("INBOX") // INBOX, Sent, Drafts, Spam, Trash, custom folders
+  
+  // Timestamps
+  sentAt          DateTime? @map("sent_at")
+  receivedAt      DateTime  @map("received_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // IMAP/POP3 sync tracking
+  imapUid         Int?      @map("imap_uid")
+  imapFolder      String?   @map("imap_folder")
+  popMessageId    String?   @map("pop_message_id") // For POP3 tracking
+  
+  // CRM linkage (optional)
+  leadId          String?   @map("lead_id")
+  
+  // Raw email storage for re-parsing if needed
+  rawHeaders      Json?     @map("raw_headers")
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  attachments     EmailAttachment[]
+  labels          EmailLabelAssignment[]
+
+  @@unique([userId, messageId])
+  @@index([userId, threadId])
+  @@index([userId, receivedAt])
+  @@index([userId, folder])
+  @@index([userId, isRead])
+  @@index([userId, isStarred])
+  @@index([userId, imapFolder, imapUid])
+  @@index([leadId])
+  @@index([fromAddress])
+  @@index([threadId])
+  @@map("emails")
+}
+
+// Email attachments with S3/storage support
+model EmailAttachment {
+  id          String   @id @default(uuid())
+  emailId     String   @map("email_id")
+  
+  filename    String
+  contentType String   @map("content_type") // MIME type
+  size        Int      // Size in bytes
+  contentId   String?  @map("content_id") // For inline images (CID)
+  
+  // Storage location
+  storageKey  String   @map("storage_key") // S3 key or local path
+  storageUrl  String?  @map("storage_url") @db.Text // Pre-signed URL or public URL
+  
+  isInline    Boolean  @default(false) @map("is_inline") // Inline vs attachment
+  checksum    String?  // MD5/SHA for deduplication
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  
+  @@index([emailId])
+  @@index([contentId])
+  @@map("email_attachments")
+}
+
+// User-defined labels for organizing emails
+model EmailLabel {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  name            String
+  color           String?  // Hex color code
+  isSystem        Boolean  @default(false) @map("is_system") // System labels can't be deleted
+  displayOrder    Int      @default(0) @map("display_order")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments EmailLabelAssignment[]
+  
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("email_labels")
+}
+
+// Many-to-many relationship between emails and labels
+model EmailLabelAssignment {
+  id        String   @id @default(uuid())
+  emailId   String   @map("email_id")
+  labelId   String   @map("label_id")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  email Email      @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  label EmailLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  
+  @@unique([emailId, labelId])
+  @@index([emailId])
+  @@index([labelId])
+  @@map("email_label_assignments")
+}
+
+// Track sync state for incremental IMAP/POP3 sync
+model EmailSyncState {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  folder          String    // INBOX, Sent, Drafts, etc.
+  
+  // IMAP state tracking
+  uidValidity     Int?      @map("uid_validity") // UIDVALIDITY value
+  lastUid         Int?      @map("last_uid")     // Highest UID synced
+  highestModSeq   BigInt?   @map("highest_mod_seq") // For CONDSTORE extension
+  
+  // POP3 state tracking
+  lastPopMessageId String?  @map("last_pop_message_id")
+  
+  // Sync metadata
+  totalMessages   Int       @default(0) @map("total_messages")
+  syncedMessages  Int       @default(0) @map("synced_messages")
+  
+  // Sync status
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastFullSyncAt  DateTime? @map("last_full_sync_at")
+  syncStatus      String    @default("idle") @map("sync_status") // 'idle', 'syncing', 'error', 'paused'
+  syncProgress    Int       @default(0) @map("sync_progress") // Percentage 0-100
+  errorMessage    String?   @map("error_message") @db.Text
+  errorCount      Int       @default(0) @map("error_count")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, folder])
+  @@index([userId])
+  @@index([syncStatus])
+  @@map("email_sync_states")
+}
+
+// Email sync job queue tracking (for background processing)
+model EmailSyncJob {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  
+  jobType     String    @map("job_type") // 'full_sync', 'incremental_sync', 'folder_sync'
+  folder      String?   // Specific folder to sync
+  priority    Int       @default(0) // Higher = more priority
+  
+  status      String    @default("pending") // 'pending', 'processing', 'completed', 'failed', 'cancelled'
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3) @map("max_attempts")
+  
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  
+  result      Json?     // Sync results: {processed, errors, duration}
+  error       String?   @db.Text
+  
+  scheduledFor DateTime? @map("scheduled_for") // For delayed jobs
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([scheduledFor])
+  @@map("email_sync_jobs")
+}

@@ -1,0 +1,639 @@
+Here is an **enhanced, premium, top-rated Design System** (text format) - a comprehensive, stable, and scalable design foundation for your CRM application. This system elevates the existing design with advanced components, improved accessibility, sophisticated animations, and enterprise-grade patterns.
+
+---
+
+# 🚀 **ENHANCED PREMIUM DESIGN SYSTEM**
+
+*(Production-ready, scalable, and top-rated - optimized for CRM dashboards)*
+
+---
+
+# **1. Brand Identity & Philosophy**
+
+### **Brand Personality**
+
+* **Premium Excellence**: Sophisticated, reliable, and trustworthy
+* **Data-Driven Clarity**: Clean, organized, and insightful
+* **Professional Warmth**: Friendly yet authoritative
+* **Scalable Innovation**: Modern, adaptable, and future-proof
+* **User-Centric Focus**: Intuitive, accessible, and empowering
+
+### **Brand Values**
+
+* **Precision**: Exact, accurate, and meticulous
+* **Efficiency**: Streamlined workflows and optimal performance
+* **Trust**: Reliable, secure, and transparent
+* **Growth**: Scalable solutions that evolve with your business
+
+### **SUZALINK BRAND COLOR SYSTEM (Logo-Derived)**
+
+#### **1. Core Brand Palette - Primary (SuzaLink Blue)**
+
+High contrast, scalable, WCAG-compliant tints + shades derived from logo color `#1A6BFF`:
+
+* **Primary 50**: `#E7F0FF` - Lightest tint
+* **Primary 100**: `#CFE0FF` - Very light tint
+* **Primary 200**: `#A8C8FF` - Light tint
+* **Primary 300**: `#7FAFFF` - Medium-light tint
+* **Primary 400**: `#4E8EFF` - Medium tint
+* **Primary 500**: `#1A6BFF` - **Main brand color (Logo)**
+* **Primary 600**: `#0F4FCC` - Medium shade
+* **Primary 700**: `#093799` - Dark shade
+* **Primary 800**: `#052266` - Very dark shade
+* **Primary 900**: `#021033` - Darkest shade
+
+**Usage:**
+* Buttons (primary variant)
+* Focus states
+* Links
+* Selected Navigation
+* Brand components
+
+#### **2. Secondary Palette - Gray (High-Contrast Neutral System)**
+
+Perfect for white dashboards, CRM UIs, black backgrounds, and light/dark mode compatibility:
+
+* **Gray 0**: `#FFFFFF` - Pure white
+* **Gray 50**: `#F8F9FA` - Off-white
+* **Gray 100**: `#F1F3F5` - Very light gray
+* **Gray 200**: `#E9ECEF` - Light gray
+* **Gray 300**: `#DEE2E6` - Medium-light gray
+* **Gray 400**: `#CED4DA` - Medium gray
+* **Gray 500**: `#ADB5BD` - Medium-dark gray
+* **Gray 600**: `#6C757D` - Dark gray
+* **Gray 700**: `#495057` - Very dark gray
+* **Gray 800**: `#343A40` - Almost black
+* **Gray 900**: `#1E1E1E` - Near black
+* **Gray 1000**: `#0C0C0C` - Black mode base
+
+#### **3. Complementary Accent Color**
+
+A professional complementary color for alerts, premium states, CTAs:
+
+* **Accent 500**: `#FF6B4A` - Complementary to blue
+* **Accent 600**: `#CC543A` - Darker shade
+* **Accent 700**: `#993F2C` - Darkest shade
+
+**Use for:**
+* Highlighted tags
+* Warnings
+* Marketing CTAs (when not using blue)
+
+#### **4. Semantic Colors - Success**
+
+* **Success 50**: `#E9FFF4` - Lightest tint
+* **Success 300**: `#7AF3C3` - Light tint
+* **Success 500**: `#00D985` - Main success color
+* **Success 700**: `#00945C` - Dark shade
+
+#### **5. Semantic Colors - Warning**
+
+* **Warning 50**: `#FFF8E6` - Lightest tint
+* **Warning 300**: `#FFD26A` - Light tint
+* **Warning 500**: `#FFAA00` - Main warning color
+* **Warning 700**: `#A66D00` - Dark shade
+
+#### **6. Semantic Colors - Error**
+
+* **Error 50**: `#FFE8E8` - Lightest tint
+* **Error 300**: `#FF7474` - Light tint
+* **Error 500**: `#FF3B3B` - Main error color
+* **Error 700**: `#B00000` - Dark shade
+
+#### **7. Foreground / Background Pairs**
+
+Optimized for max readability.
+
+**Light Mode:**
+* **Background Primary**: `var(--gray-0)` - Main background
+* **Background Secondary**: `var(--gray-50)` - Secondary surfaces
+* **Background Tertiary**: `var(--gray-100)` - Tertiary surfaces
+* **Foreground Primary**: `var(--gray-900)` - Main text
+* **Foreground Secondary**: `var(--gray-700)` - Secondary text
+* **Foreground Tertiary**: `var(--gray-600)` - Tertiary text
+* **Foreground On Primary**: `var(--gray-0)` - Text on primary blue
+* **Foreground On Secondary**: `var(--gray-900)` - Text on secondary
+* **Border Default**: `var(--gray-300)` - Standard borders
+* **Border Strong**: `var(--gray-400)` - Emphasized borders
+
+**Dark Mode:**
+* **Background Primary**: `var(--gray-1000)` - Main background
+* **Background Secondary**: `var(--gray-900)` - Secondary surfaces
+* **Background Tertiary**: `var(--gray-800)` - Tertiary surfaces
+* **Foreground Primary**: `var(--gray-0)` - Main text
+* **Foreground Secondary**: `var(--gray-200)` - Secondary text
+* **Foreground Tertiary**: `var(--gray-400)` - Tertiary text
+* **Foreground On Primary**: `var(--gray-0)` - Text on primary blue
+* **Border Default**: `var(--gray-700)` - Standard borders
+* **Border Strong**: `var(--gray-500)` - Emphasized borders
+
+#### **8. Component States (Buttons / Inputs / Nav / Tabs)**
+
+**Primary Button:**
+* Default: `background: var(--primary-500); color: var(--gray-0)`
+* Hover: `background: var(--primary-600)`
+* Active: `background: var(--primary-700)`
+* Disabled: `background: var(--gray-300); color: var(--gray-500)`
+
+**Secondary Button:**
+* Default: `background: var(--gray-100); color: var(--gray-900)`
+* Hover: `background: var(--gray-200)`
+* Active: `background: var(--gray-300)`
+* Disabled: `background: var(--gray-100); color: var(--gray-400)`
+
+**Outline Button:**
+* Default: `border: var(--gray-300)`
+* Hover: `border: var(--gray-400)`
+* Active: `border: var(--gray-500)`
+* Disabled: `border: var(--gray-200)`
+
+#### **9. Navigation & Active States**
+
+**Nav Links:**
+* Default: `color: var(--gray-700)`
+* Hover: `color: var(--primary-500)`
+* Active: `color: var(--primary-600); font-weight: 600`
+
+**Tabs:**
+* Active tab background: `var(--primary-50)`
+* Active tab border: `var(--primary-500)`
+* Inactive tab: `var(--gray-200)`
+
+#### **10. Shadows & Elevation**
+
+* **Shadow XS**: `0 1px 2px rgba(0,0,0,0.04)` - Subtle elevation
+* **Shadow SM**: `0 2px 4px rgba(0,0,0,0.06)` - Small elevation
+* **Shadow MD**: `0 4px 8px rgba(0,0,0,0.08)` - Medium elevation
+* **Shadow LG**: `0 8px 16px rgba(0,0,0,0.10)` - Large elevation
+* **Shadow XL**: `0 12px 24px rgba(0,0,0,0.12)` - Extra large elevation
+
+#### **11. Radius System**
+
+* **Radius SM**: `4px` - Small radius
+* **Radius MD**: `8px` - Medium radius
+* **Radius LG**: `12px` - Large radius (default for buttons)
+* **Radius XL**: `20px` - Extra large radius
+* **Radius Full**: `999px` - Full rounded (pills)
+
+#### **12. Opacity Tokens**
+
+* **Opacity Hover**: `0.90` - Hover state opacity
+* **Opacity Pressed**: `0.80` - Pressed/active state opacity
+* **Opacity Disabled**: `0.45` - Disabled state opacity
+* **Opacity Muted**: `0.65` - Muted/secondary content opacity
+
+#### **13. Chart & Data Colors**
+
+* **Chart Blue**: `#4C85FF`
+* **Chart Orange**: `#FFA445`
+* **Chart Purple**: `#A46CFF`
+* **Chart Pink**: `#FF6D9D`
+* **Chart Teal**: `#20C4B5`
+* **Chart Green**: `#44CC77`
+* **Chart Indigo**: `#6366F1`
+* **Chart Gray**: `#6B7280`
+
+#### **14. Legacy Color Support**
+
+For backward compatibility, the following mappings are maintained:
+* `--color-primary-500` → `--primary-500`
+* `--color-primary-100` → `--primary-100`
+* `--color-text-main` → `--fg-primary`
+* `--color-text-body` → `--fg-secondary`
+* `--color-text-light` → `--fg-tertiary`
+* `--color-danger-500` → `--error-500`
+* `--color-warning-500` → `--warning-500`
+* `--color-success-500` → `--success-500`
+
+---
+
+# **2. Typography System**
+
+### **Font Family Stack**
+
+* **Primary Font**: `Inter` (Google Fonts)
+* **Fallback**: `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+* **Monospace**: `JetBrains Mono` (for code/data displays)
+
+### **Font Weight Scale**
+
+* **900**: Heavy emphasis, key metrics
+* **700**: Section headers, important buttons
+* **600**: Card titles, navigation labels
+* **500**: Button text, form labels
+* **400**: Body text, descriptions
+* **300**: Captions, metadata
+
+### **Comprehensive Font Size Scale**
+
+* **Display Large**: `36px` (2.25rem) - Main dashboard headers
+* **Display Medium**: `32px` (2rem) - Section headers
+* **Display Small**: `28px` (1.75rem) - Card group headers
+* **Heading 1**: `24px` (1.5rem) - Major section titles
+* **Heading 2**: `20px` (1.25rem) - Subsection titles
+* **Heading 3**: `18px` (1.125rem) - Card titles
+* **Heading 4**: `16px` (1rem) - Component headers
+* **Body Large**: `16px` (1rem) - Primary body text
+* **Body Medium**: `14px` (0.875rem) - Standard body text
+* **Body Small**: `13px` (0.8125rem) - Secondary body text
+* **Caption**: `12px` (0.75rem) - Metadata, timestamps
+* **Label**: `11px` (0.6875rem) - Form labels, badges
+
+### **Line Height Scale**
+
+* **Tight**: `1.25` - Headings, compact text
+* **Normal**: `1.5` - Body text, readable content
+* **Relaxed**: `1.625` - Long-form content, improved readability
+
+### **Letter Spacing**
+
+* **Tight**: `-0.025em` - Large headings
+* **Normal**: `0` - Body text
+* **Wide**: `0.025em` - Small text, captions
+
+### **Text Color Hierarchy**
+
+* **Primary**: `var(--text-primary)` - Main content, headings
+* **Secondary**: `var(--text-secondary)` - Supporting text
+* **Tertiary**: `var(--text-tertiary)` - Metadata, timestamps
+* **Disabled**: `var(--text-disabled)` - Inactive states
+* **Inverse**: `var(--text-inverse)` - Text on colored backgrounds
+
+---
+
+# **3. Layout & Spacing System**
+
+### **Grid System**
+
+* **Base Unit**: 4px (4-point grid foundation)
+* **Container Max Widths**:
+  - `1280px` (80rem) - Standard desktop
+  - `1440px` (90rem) - Large desktop
+  - `1536px` (96rem) - Extra large desktop
+
+### **Comprehensive Spacing Scale**
+
+* **2**: `8px` (0.5rem) - Minimal spacing
+* **3**: `12px` (0.75rem) - Tight spacing
+* **4**: `16px` (1rem) - Component spacing
+* **5**: `20px` (1.25rem) - Card padding
+* **6**: `24px` (1.5rem) - Section spacing
+* **8**: `32px` (2rem) - Container padding
+* **10**: `40px` (2.5rem) - Large sections
+* **12**: `48px` (3rem) - Major sections
+* **16**: `64px` (4rem) - Page sections
+* **20**: `80px` (5rem) - Hero spacing
+* **24**: `96px` (6rem) - Maximum spacing
+
+### **Component Spacing Guidelines**
+
+* **Cards**: `padding: 24px` (6)
+* **Form Fields**: `margin-bottom: 16px` (4)
+* **Button Groups**: `gap: 12px` (3)
+* **List Items**: `margin-bottom: 8px` (2)
+* **Navigation Items**: `padding: 12px 16px` (3 4)
+
+### **Layout Components**
+
+#### **Card System (Enhanced)**
+* **Background**: `var(--surface)`
+* **Border Radius**: `16px` (4)
+* **Border**: `1px solid var(--border-light)`
+* **Box Shadow**: `0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)`
+* **Padding Variants**:
+  - Compact: `16px` (4)
+  - Standard: `24px` (6)
+  - Comfortable: `32px` (8)
+
+#### **Sidebar System**
+* **Width**: `280px` (fixed)
+* **Background**: `var(--sidebar-bg)`
+* **Border**: `1px solid var(--border-light)`
+* **Navigation Item States**:
+  - Default: `padding: 12px 16px`
+  - Hover: `background: var(--sidebar-hover)`
+  - Active: `background: var(--sidebar-active)`, `border-left: 3px solid var(--primary-500)`
+
+#### **Header System**
+* **Height**: `72px` (fixed)
+* **Background**: `var(--surface)`
+* **Border Bottom**: `1px solid var(--border-light)`
+* **Box Shadow**: `0 1px 3px rgba(0,0,0,0.1)`
+
+#### **Grid Layouts**
+* **Dashboard Grid**: `grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))`
+* **Stats Grid**: `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))`
+* **Form Grid**: `grid-template-columns: 1fr 1fr` (responsive)
+
+---
+
+# **4. Color Usage Rules**
+
+### **Main Uses**
+
+* **SuzaLink Blue (Primary 500)**: brand, buttons, links, active states, focus states, selected navigation
+* **Accent Orange (Accent 500)**: highlighted tags, warnings, marketing CTAs
+* **Gray Scale**: structure, backgrounds, table borders, subtitles, neutral elements
+* **Chart Colors**: data visualization, graphs, metrics
+
+### **State Colors**
+
+* **Success**: `var(--success-500)` / `#00D985` - Success alerts, positive states, confirmations
+* **Warning**: `var(--warning-500)` / `#FFAA00` - Warning alerts, caution states
+* **Error**: `var(--error-500)` / `#FF3B3B` - Error alerts, destructive actions, danger states
+* **Info**: `var(--primary-500)` / `#1A6BFF` - Informational messages, neutral status
+
+---
+
+# **5. Enhanced Button System**
+
+### **Button Variants**
+
+#### **Primary Button**
+* **Background**: `var(--btn-primary-bg)` / `var(--primary-500)`
+* **Text**: `var(--btn-primary-color)` / `var(--fg-on-primary)`
+* **Border Radius**: `var(--radius-lg)` / `12px`
+* **Padding**: `12px 24px`
+* **Font Weight**: `500`
+* **Font Size**: `14px`
+* **States**:
+  - Hover: `var(--btn-primary-hover)` / `var(--primary-600)`, shadow increase
+  - Active: `var(--btn-primary-active)` / `var(--primary-700)`, scale 0.98
+  - Disabled: `var(--btn-primary-disabled-bg)`, `var(--btn-primary-disabled-color)`, `cursor: not-allowed`
+
+#### **Secondary Button**
+* **Background**: `var(--btn-secondary-bg)` / `var(--gray-100)`
+* **Border**: `1px solid var(--border-default)`
+* **Text**: `var(--btn-secondary-color)` / `var(--fg-primary)`
+* **Border Radius**: `var(--radius-lg)` / `12px`
+* **Padding**: `12px 24px`
+* **States**:
+  - Hover: `var(--btn-secondary-hover)` / `var(--gray-200)`, border darker
+  - Active: `var(--btn-secondary-active)` / `var(--gray-300)`
+  - Disabled: `var(--btn-secondary-disabled-bg)`, `var(--btn-secondary-disabled-color)`
+
+#### **Ghost Button**
+* **Background**: `transparent`
+* **Border**: `none`
+* **Text**: `var(--primary-500)`
+* **Border Radius**: `var(--radius-lg)` / `12px`
+* **Padding**: `12px 24px`
+* **States**:
+  - Hover: `var(--primary-100)` background
+  - Active: `var(--primary-200)` background
+
+#### **Danger Button**
+* **Background**: `var(--error-500)`
+* **Text**: `var(--fg-on-primary)`
+* **Border Radius**: `var(--radius-lg)` / `12px`
+* **Padding**: `12px 24px`
+* **Usage**: Delete actions, destructive operations
+
+#### **Success Button**
+* **Background**: `var(--success-500)`
+* **Text**: `var(--fg-on-primary)`
+* **Border Radius**: `var(--radius-lg)` / `12px`
+* **Padding**: `12px 24px`
+* **Usage**: Confirm actions, positive operations
+
+### **Icon Button Variants**
+
+#### **Standard Icon Button**
+* **Size**: `40px x 40px`
+* **Border Radius**: `12px`
+* **Background**: `var(--surface)`
+* **Border**: `1px solid var(--border-light)`
+* **States**:
+  - Hover: `var(--surface-hover)`
+  - Active: `var(--surface-active)`
+
+#### **Floating Action Button (FAB)**
+* **Size**: `56px x 56px`
+* **Border Radius**: `50%`
+* **Background**: `var(--primary-500)`
+* **Shadow**: `0 4px 12px rgba(59, 191, 122, 0.3)`
+* **Position**: Fixed bottom-right
+
+#### **Icon-only Buttons**
+* **Sizes**: `32px`, `40px`, `48px`
+* **Border Radius**: `8px` (small), `12px` (medium/large)
+* **Background**: `transparent`
+* **States**: Subtle hover effects
+
+### **Button Sizes**
+
+* **Small**: `padding: 8px 16px`, `font-size: 13px`
+* **Medium**: `padding: 12px 24px`, `font-size: 14px` (default)
+* **Large**: `padding: 16px 32px`, `font-size: 16px`
+
+### **Button Groups**
+
+* **Spacing**: `8px` gap between buttons
+* **Border Radius**: First button left-rounded, last button right-rounded, middle buttons no radius
+* **Connected Style**: Shared borders between adjacent buttons
+
+---
+
+# **6. Input Fields**
+
+### **Text Inputs**
+
+* Height: **42–48px**
+* Radius: **12px**
+* Border: `1px solid #E6E8EB`
+* Focus Border: mint `#3BBF7A`
+* Background: white
+* Placeholder: `#A8B0B7`
+
+### **Dropdowns**
+
+* Same shape as inputs
+* Chevron icon on right
+
+---
+
+# **7. Navigation System**
+
+### **Top Bar**
+
+* White background
+* Slight shadow
+* Height: 64px
+
+### **Sidebar Navigation**
+
+* Icon + label
+* Selected item uses:
+
+  * Primary blue (`var(--primary-500)`) left indicator bar
+  * Primary blue background at 8% opacity (`var(--primary-50)`)
+  * Bold text (`font-weight: 600`)
+  * Active color: `var(--nav-link-active)` / `var(--primary-600)`
+
+---
+
+# **8. Chart System**
+
+### **Bar Charts**
+
+* Two-color:
+
+  * **Revenue (orange)**: `#FFA445`
+  * **Gross Margin (blue)**: `#4C85FF`
+
+### **Donut Charts**
+
+* Multicolor palette:
+
+  * Green, Blue, Orange, Purple, Pink, Teal
+* Center cutout: **60–70%**
+
+### **Tooltips**
+
+* White background
+* Shadow
+* Radius 12px
+* Title bold, value green if positive
+
+---
+
+# **9. Iconography**
+
+### **Style**
+
+* Minimal line icons
+* Rounded edges
+* Stroke 1.5px
+* Duotone optional (green accents)
+
+Recommended Packs:
+* **Tabler icons**
+* **Lucide icons**
+
+
+
+---
+
+# **10. Grid and Alignment**
+
+### **Grid**
+
+* 12-column
+* 24px gutter
+* Cards align in clean rows
+
+### **Section Titles**
+
+* Always align left
+
+### **Chart Cards**
+
+* Title at top left
+* Legend small + colored bullets
+
+---
+
+# **11. Components List**
+
+### **Core Components**
+
+* App Sidebar
+* Top Header
+* Statistic Cards
+* Bar Chart Block
+* Donut Chart Block
+* List/Table
+* Search Input
+* Tag (rounded pills)
+* User Profile Block
+* Settings Page Layout
+
+### **Statistic Card Style**
+
+* White BG
+* Radius 16px
+* Shadow soft
+* Icon circle (green tint)
+* Large number (24–28px)
+* Small percentage indicator with arrow
+
+---
+
+# **12. Shadow System**
+
+* **Shadow XS**: `var(--shadow-xs)` / `0 1px 2px rgba(0,0,0,0.04)` - Subtle elevation
+* **Shadow SM**: `var(--shadow-sm)` / `0 2px 4px rgba(0,0,0,0.06)` - Small elevation
+* **Shadow MD**: `var(--shadow-md)` / `0 4px 8px rgba(0,0,0,0.08)` - Medium elevation
+* **Shadow LG**: `var(--shadow-lg)` / `0 8px 16px rgba(0,0,0,0.10)` - Large elevation
+* **Shadow XL**: `var(--shadow-xl)` / `0 12px 24px rgba(0,0,0,0.12)` - Extra large elevation
+
+**Note**: Dark mode uses enhanced shadows for better depth perception. No harsh/dark shadows in light mode.
+
+---
+
+# **13. Motion / Animation**
+
+* Micro-animations only:
+
+  * Hover scale: **1.01**
+  * Fade-in 120–150ms
+  * Smooth chart transitions
+
+---
+
+# **14. Brand Voice (CRM Context)**
+
+* Friendly
+* Clear
+* Short
+* Data-focused
+* Helpful
+
+---
+
+# **15. Dark Mode Implementation**
+
+### **Dark Mode Color System**
+
+The dark mode uses the same color structure as light mode, with adjusted values for optimal contrast and readability on dark backgrounds.
+
+#### **Key Differences from Light Mode:**
+
+* **Text Colors**: Use white (`rgba(255, 255, 255, ...)`) instead of black
+* **Background**: `#121212` (main) / `#222222` (panels)
+* **Border**: `rgba(255, 255, 255, 0.08)` for subtle borders
+* **Primary Opacity**: 30% and 14% instead of 20% and 5% for better visibility
+* **Status Colors**: Same base colors with adjusted opacity (30% and 14% instead of 20%/30% and 5%/9%)
+
+#### **Implementation:**
+
+Dark mode is activated using the `.dark` class on the root element. All color variables automatically switch when dark mode is active.
+
+#### **Usage in Code:**
+
+```tsx
+// Tailwind classes automatically adapt
+<div className="bg-panel text-foreground">
+  <p className="text-text-87">Primary text</p>
+  <p className="text-text-60">Secondary text</p>
+</div>
+
+// CSS variables automatically switch
+<div style={{ backgroundColor: 'var(--color-bg-panel)' }}>
+  Content
+</div>
+```
+
+---
+
+# ✅ DONE
+
+If you want, I can also generate:
+
+✅ **Tailwind config matching this design system**
+✅ **Figma-ready tokens**
+✅ **Sidebar component in code**
+✅ **React components**
+✅ **Cursor-ready boilerplate**
+
+Just tell me what you want next!

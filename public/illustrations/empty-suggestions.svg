@@ -1,0 +1,47 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="90" cy="90" r="75" fill="url(#suggestGradient)" opacity="0.08"/>
+  
+  <!-- Lightbulb -->
+  <g transform="translate(55, 35)">
+    <!-- Bulb -->
+    <path d="M35 0C15 0 0 15 0 35C0 50 10 60 15 70L55 70C60 60 70 50 70 35C70 15 55 0 35 0Z" fill="#FFAA00" opacity="0.2"/>
+    <path d="M35 5C18 5 5 18 5 35C5 48 13 57 18 67L52 67C57 57 65 48 65 35C65 18 52 5 35 5Z" fill="#FFAA00" opacity="0.4"/>
+    
+    <!-- Filament -->
+    <path d="M28 40C28 32 35 28 35 28C35 28 42 32 42 40" stroke="#FFA445" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <line x1="35" y1="28" x2="35" y2="20" stroke="#FFA445" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Base -->
+    <rect x="18" y="70" width="34" height="8" rx="2" fill="#CED4DA"/>
+    <rect x="20" y="78" width="30" height="6" rx="2" fill="#ADB5BD"/>
+    <rect x="22" y="84" width="26" height="4" rx="2" fill="#6C757D"/>
+  </g>
+  
+  <!-- Sparkles Around -->
+  <g transform="translate(130, 55)">
+    <path d="M10 0L12 8L20 10L12 12L10 20L8 12L0 10L8 8L10 0Z" fill="#FFAA00" opacity="0.6"/>
+  </g>
+  
+  <g transform="translate(25, 70)">
+    <path d="M8 0L10 6L16 8L10 10L8 16L6 10L0 8L6 6L8 0Z" fill="#1A6BFF" opacity="0.4"/>
+  </g>
+  
+  <!-- Check Mark -->
+  <g transform="translate(115, 115)">
+    <circle cx="20" cy="20" r="20" fill="#00D985"/>
+    <path d="M12 20L17 25L28 14" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Small decorative dots -->
+  <circle cx="45" cy="145" r="4" fill="#A46CFF" opacity="0.3"/>
+  <circle cx="145" cy="45" r="3" fill="#00D985" opacity="0.4"/>
+  
+  <defs>
+    <linearGradient id="suggestGradient" x1="15" y1="15" x2="165" y2="165" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFAA00"/>
+      <stop offset="1" stop-color="#00D985"/>
+    </linearGradient>
+  </defs>
+</svg>
+
