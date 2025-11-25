@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { parseCSVHeaders, parseCSVPreview } from "@/lib/csv-parser";
+import { parseCSVHeaders, parseCSVPreview } from "@/lib/csv-parser-blob";
 import { processCSVImport } from "@/lib/csv-processor";
 import { prisma } from "@/lib/prisma";
+import { uploadFile } from "@/lib/storage";
+
+export const runtime = "nodejs";
 
 export async function POST(
   request: NextRequest,
@@ -46,26 +46,16 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Save file temporarily
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const uploadsDir = join(process.cwd(), "uploads");
-    
-    // Create uploads directory if it doesn't exist
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-    
-    const filePath = join(uploadsDir, `${Date.now()}_${file.name}`);
-
-    await writeFile(filePath, buffer);
+    // Upload file to storage (Vercel Blob in production, local filesystem in dev)
+    const fileName = `${Date.now()}_${file.name}`;
+    const storage = await uploadFile(file, fileName, "csv-imports");
 
     // Parse CSV headers and preview
-    const headers = await parseCSVHeaders(filePath);
-    const preview = await parseCSVPreview(filePath, 5);
+    const headers = await parseCSVHeaders(storage.url);
+    const preview = await parseCSVPreview(storage.url, 5);
 
     return NextResponse.json({
-      filePath,
+      filePath: storage.url, // Use URL for both local and blob storage
       headers,
       preview,
     });
