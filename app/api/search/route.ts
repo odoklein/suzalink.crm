@@ -3,8 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { 
-
-export const runtime = "nodejs";
   SearchQuery, 
   SearchResult,
   buildPrismaWhere, 
@@ -14,6 +12,8 @@ export const runtime = "nodejs";
   CAMPAIGN_SEARCH_FIELDS,
   ACCOUNT_SEARCH_FIELDS
 } from "@/lib/search";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
