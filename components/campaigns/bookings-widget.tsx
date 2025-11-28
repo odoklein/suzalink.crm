@@ -23,7 +23,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DashboardSection } from "./campaign-dashboard";
-import { format, isToday, isTomorrow, differenceInMinutes } from "date-fns";
+import { format, isToday, isTomorrow, differenceInMinutes, isValid } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Booking {
   id: string;
@@ -71,20 +72,26 @@ function getBookingTypeIcon(type: string) {
 }
 
 function getRelativeDate(dateStr: string): string {
+  if (!dateStr) return "Date inconnue";
   const date = new Date(dateStr);
-  if (isToday(date)) return "Today";
-  if (isTomorrow(date)) return "Tomorrow";
-  return format(date, "EEE, MMM d");
+  if (!isValid(date)) return "Date invalide";
+  
+  if (isToday(date)) return "Aujourd'hui";
+  if (isTomorrow(date)) return "Demain";
+  return format(date, "EEEE d MMMM", { locale: fr });
 }
 
 function getTimeUntil(dateStr: string, timeStr: string): string | null {
+  if (!dateStr || !timeStr) return null;
   const dateTime = new Date(`${dateStr}T${timeStr}`);
+  if (!isValid(dateTime)) return null;
+  
   const now = new Date();
   const minutes = differenceInMinutes(dateTime, now);
 
   if (minutes < 0) return null;
-  if (minutes < 60) return `In ${minutes}m`;
-  if (minutes < 1440) return `In ${Math.floor(minutes / 60)}h`;
+  if (minutes < 60) return `Dans ${minutes}m`;
+  if (minutes < 1440) return `Dans ${Math.floor(minutes / 60)}h`;
   return null;
 }
 
@@ -123,8 +130,8 @@ function BookingCard({
       className={cn(
         "group p-3 rounded-xl border transition-all duration-200 cursor-pointer",
         isUpcoming
-          ? "border-primary-200 bg-primary-50/50 hover:bg-primary-50"
-          : "border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-200",
+          ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
+          : "border-border bg-card hover:bg-accent/50 hover:border-accent",
         "animate-in fade-in slide-in-from-right-2"
       )}
       style={{ animationDelay: `${index * 60}ms` }}
@@ -132,8 +139,8 @@ function BookingCard({
     >
       <div className="flex items-start gap-3">
         {/* Lead avatar */}
-        <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
-          <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-600">
+        <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+          <AvatarFallback className="text-xs font-medium bg-muted text-muted-foreground">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -141,21 +148,21 @@ function BookingCard({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <p className="font-medium text-sm text-gray-900 truncate">{leadName}</p>
+            <p className="font-medium text-sm text-foreground truncate">{leadName}</p>
             {isUpcoming && (
-              <Badge className="text-[10px] px-1.5 py-0 bg-primary-100 text-primary-700 border-primary-200">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
                 {timeUntil}
               </Badge>
             )}
           </div>
-          <p className="text-xs text-gray-500 truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {booking.lead?.standardData?.company || booking.title || booking.type}
           </p>
         </div>
 
         {/* Time & type */}
         <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <Clock className="h-3 w-3" />
             {booking.startTime?.slice(0, 5)}
           </div>
@@ -164,16 +171,11 @@ function BookingCard({
               <TooltipTrigger>
                 <div
                   className={cn(
-                    "p-1.5 rounded-lg",
-                    isUpcoming ? "bg-primary-100" : "bg-gray-100"
+                    "p-1.5 rounded-lg transition-colors",
+                    isUpcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   )}
                 >
-                  <TypeIcon
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      isUpcoming ? "text-primary-600" : "text-gray-500"
-                    )}
-                  />
+                  <TypeIcon className="h-3.5 w-3.5" />
                 </div>
               </TooltipTrigger>
               <TooltipContent>{booking.type}</TooltipContent>
@@ -237,8 +239,8 @@ export function BookingsWidget({
 
   return (
     <DashboardSection
-      title="Upcoming Meetings"
-      subtitle={`${bookings.length} scheduled`}
+      title="Prochains Rendez-vous"
+      subtitle={`${bookings.length} planifiés`}
       action={
         <Button
           variant="outline"
@@ -247,7 +249,7 @@ export function BookingsWidget({
           onClick={onAddBooking}
         >
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Schedule
+          Planifier
         </Button>
       }
     >
@@ -259,24 +261,24 @@ export function BookingsWidget({
         </div>
       ) : bookings.length === 0 ? (
         <div className="py-8 text-center">
-          <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <CalendarDays className="h-6 w-6 text-gray-400" />
+          <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+            <CalendarDays className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-gray-500 mb-3">No upcoming meetings</p>
+          <p className="text-sm text-muted-foreground mb-3">Aucun rendez-vous à venir</p>
           <Button
             variant="outline"
             size="sm"
             className="text-xs"
             onClick={onAddBooking}
           >
-            Schedule a meeting
+            Planifier un rendez-vous
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
           {Object.entries(groupedBookings).map(([date, dateBookings]) => (
             <div key={date}>
-              <p className="text-xs font-medium text-gray-500 mb-2 px-1">{date}</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2 px-1 capitalize">{date}</p>
               <div className="space-y-2">
                 {(dateBookings as Booking[]).map((booking, index) => (
                   <BookingCard key={booking.id} booking={booking} index={index} />
@@ -288,10 +290,10 @@ export function BookingsWidget({
           {onViewAll && (
             <Button
               variant="ghost"
-              className="w-full h-8 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+              className="w-full h-8 text-sm text-primary hover:text-primary hover:bg-primary/10"
               onClick={onViewAll}
             >
-              View all meetings
+              Voir tous les rendez-vous
               <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
           )}

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DashboardSection } from "./campaign-dashboard";
 import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface ActivityItem {
   id: string;
@@ -57,43 +58,43 @@ const ACTIVITY_CONFIG: Record<
     icon: Phone,
     color: "text-blue-600",
     bgColor: "bg-blue-100",
-    label: "Call made",
+    label: "Appel effectué",
   },
   EMAIL: {
     icon: Mail,
     color: "text-emerald-600",
     bgColor: "bg-emerald-100",
-    label: "Email sent",
+    label: "Email envoyé",
   },
   NOTE: {
     icon: FileText,
     color: "text-amber-600",
     bgColor: "bg-amber-100",
-    label: "Note added",
+    label: "Note ajoutée",
   },
   STATUS_CHANGE: {
     icon: Activity,
     color: "text-violet-600",
     bgColor: "bg-violet-100",
-    label: "Status changed",
+    label: "Statut modifié",
   },
   MEETING: {
     icon: Calendar,
     color: "text-pink-600",
     bgColor: "bg-pink-100",
-    label: "Meeting scheduled",
+    label: "Rendez-vous planifié",
   },
   MESSAGE: {
     icon: MessageSquare,
     color: "text-cyan-600",
     bgColor: "bg-cyan-100",
-    label: "Message sent",
+    label: "Message envoyé",
   },
   COMPLETED: {
     icon: CheckCircle,
     color: "text-green-600",
     bgColor: "bg-green-100",
-    label: "Completed",
+    label: "Terminé",
   },
 };
 
@@ -101,7 +102,7 @@ const DEFAULT_CONFIG = {
   icon: Zap,
   color: "text-gray-600",
   bgColor: "bg-gray-100",
-  label: "Activity",
+  label: "Activité",
 };
 
 function ActivityRow({
@@ -121,21 +122,22 @@ function ActivityRow({
       ]
         .filter(Boolean)
         .join(" ")
-    : "Unknown lead";
+    : "Lead inconnu";
 
   const userEmail = activity.user?.email || "System";
   const userName = userEmail.split("@")[0];
 
   const timeAgo = formatDistanceToNow(new Date(activity.createdAt), {
     addSuffix: true,
+    locale: fr,
   });
 
   // Get description based on type and metadata
   let description = config.label;
   if (activity.type === "STATUS_CHANGE" && activity.metadata) {
-    description = `Status: ${activity.metadata.newStatus || "Updated"}`;
+    description = `Statut: ${activity.metadata.newStatus || "Modifié"}`;
   } else if (activity.type === "CALL" && activity.metadata?.duration) {
-    description = `Call (${activity.metadata.duration}m)`;
+    description = `Appel (${activity.metadata.duration}m)`;
   } else if (activity.type === "EMAIL" && activity.metadata?.subject) {
     description = `Email: ${activity.metadata.subject}`;
   }
@@ -161,7 +163,7 @@ function ActivityRow({
           <span className="text-[11px] text-gray-400 shrink-0">{timeAgo}</span>
         </div>
         <p className="text-xs text-gray-500 truncate">{description}</p>
-        <p className="text-[11px] text-gray-400 mt-0.5">by {userName}</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">par {userName}</p>
       </div>
     </div>
   );
@@ -206,8 +208,8 @@ export function ActivityFeedWidget({
 
   return (
     <DashboardSection
-      title="Recent Activity"
-      subtitle={`${activities.length} activities`}
+      title="Activité récente"
+      subtitle={`${activities.length} activités`}
       action={
         onViewAll && (
           <Button
@@ -216,7 +218,7 @@ export function ActivityFeedWidget({
             className="h-8 rounded-lg text-xs text-primary-600"
             onClick={onViewAll}
           >
-            View all
+            Voir tout
             <ArrowRight className="h-3 w-3 ml-1" />
           </Button>
         )
@@ -233,9 +235,9 @@ export function ActivityFeedWidget({
           <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
             <Activity className="h-6 w-6 text-gray-400" />
           </div>
-          <p className="text-sm text-gray-500">No recent activity</p>
+          <p className="text-sm text-gray-500">Aucune activité récente</p>
           <p className="text-xs text-gray-400 mt-1">
-            Activities will appear here as you work with leads
+            Les activités apparaîtront ici lorsque vous travaillerez avec les leads
           </p>
         </div>
       ) : (
@@ -277,7 +279,7 @@ export function TeamPerformanceWidget({
   if (team.length === 0) return null;
 
   return (
-    <DashboardSection title="Team Performance" subtitle="Assigned BDs">
+    <DashboardSection title="Performance de l'équipe" subtitle="Commerciaux assignés">
       <div className="space-y-3">
         {team.slice(0, 5).map((member, index) => {
           const email = member.email;
@@ -309,7 +311,7 @@ export function TeamPerformanceWidget({
                   {name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {member.leadCount} leads • {qualifiedRate}% qualified
+                  {member.leadCount} leads • {qualifiedRate}% qualifiés
                 </p>
               </div>
 

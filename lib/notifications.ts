@@ -1,7 +1,7 @@
 export interface Notification {
   id: string;
   userId: string;
-  type: 'lead_assigned' | 'lead_qualified' | 'email_opened' | 'call_missed' | 'task_due' | 'sequence_completed' | 'system';
+  type: 'lead_assigned' | 'lead_qualified' | 'email_opened' | 'call_missed' | 'task_due' | 'sequence_completed' | 'system' | 'bd_assigned';
   title: string;
   message: string;
   data?: Record<string, any>;
@@ -68,6 +68,11 @@ export const NOTIFICATION_TYPES = {
     icon: '🔔',
     color: 'gray',
     title: 'System Notification',
+  },
+  bd_assigned: {
+    icon: '📅',
+    color: 'purple',
+    title: 'Nouvelle assignation',
   },
 };
 

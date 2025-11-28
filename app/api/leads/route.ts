@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const campaignId = searchParams.get("campaignId");
     const status = searchParams.get("status");
+    const statusId = searchParams.get("statusId");
     const search = searchParams.get("search");
     const assignedTo = searchParams.get("assignedTo");
     const dateFrom = searchParams.get("dateFrom");
@@ -64,7 +65,30 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    if (status) where.status = status;
+    if (statusId) {
+      where.statusId = statusId;
+    } else if (status) {
+      // Check if status is a UUID (might be passed as status param)
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(status);
+      
+      if (isUuid) {
+        where.statusId = status;
+      } else {
+        // It's a name. Check if it's a legacy enum value
+        const legacyStatuses = ["New", "Locked", "Contacted", "Qualified", "Nurture", "Lost"];
+        
+        if (legacyStatuses.includes(status)) {
+          where.OR = [
+            { status: status },
+            { statusConfig: { name: status } }
+          ];
+        } else {
+          // Dynamic status name only
+          where.statusConfig = { name: status };
+        }
+      }
+    }
+    
     if (assignedTo) where.assignedBdId = assignedTo;
 
     // Date range filter
@@ -182,6 +206,13 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
+            },
+          },
+          statusConfig: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
             },
           },
           activities: {

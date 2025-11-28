@@ -73,7 +73,7 @@ function LeadRow({
 }) {
   const { firstName, lastName, email, phone, jobTitle, company } =
     lead.standardData || {};
-  const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Unknown";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Inconnu";
   const initials = fullName
     .split(" ")
     .map((n) => n[0])
@@ -123,8 +123,8 @@ function LeadRow({
         </div>
         <p className="text-sm text-gray-500 truncate">
           {jobTitle && company
-            ? `${jobTitle} at ${company}`
-            : jobTitle || company || email || "No details"}
+            ? `${jobTitle} chez ${company}`
+            : jobTitle || company || email || "Aucun détail"}
         </p>
       </div>
 
@@ -256,7 +256,7 @@ export function LeadsSection({
   return (
     <DashboardSection
       title="Leads"
-      subtitle={`${totalCount} total leads`}
+      subtitle={`${totalCount} leads au total`}
       action={
         <div className="flex items-center gap-2">
           <Button
@@ -266,7 +266,7 @@ export function LeadsSection({
             onClick={onAddLead}
           >
             <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-            Add Lead
+            Ajouter un lead
           </Button>
         </div>
       }
@@ -276,7 +276,7 @@ export function LeadsSection({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search leads..."
+            placeholder="Rechercher des leads..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9 rounded-lg text-sm"
@@ -294,7 +294,7 @@ export function LeadsSection({
                 : "text-gray-500 hover:bg-gray-100"
             )}
           >
-            All
+            Tous
           </button>
           {statuses.slice(0, 3).map((status: any) => (
             <button
@@ -330,8 +330,8 @@ export function LeadsSection({
             </div>
             <p className="text-sm text-gray-500">
               {searchQuery || statusFilter
-                ? "No leads match your filters"
-                : "No leads yet"}
+                ? "Aucun lead ne correspond à vos filtres"
+                : "Aucun lead pour le moment"}
             </p>
             {!searchQuery && !statusFilter && (
               <Button
@@ -340,7 +340,7 @@ export function LeadsSection({
                 className="mt-3"
                 onClick={onAddLead}
               >
-                Add your first lead
+                Ajouter votre premier lead
               </Button>
             )}
           </div>
@@ -362,7 +362,7 @@ export function LeadsSection({
                   variant="ghost"
                   className="w-full h-9 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50"
                 >
-                  View all {totalCount} leads
+                  Voir tous les {totalCount} leads
                   <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </div>

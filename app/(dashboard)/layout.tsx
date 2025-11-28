@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/topbar";
 import { SidebarProvider, useSidebar } from "@/components/dashboard/sidebar-context";
+import { AssistantProvider } from "@/components/assistant";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -28,7 +29,9 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <DashboardContent>{children}</DashboardContent>
+      <AssistantProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </AssistantProvider>
     </SidebarProvider>
   );
 }

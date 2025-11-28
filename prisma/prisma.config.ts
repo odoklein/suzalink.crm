@@ -12,6 +12,9 @@ const adapter = new PrismaPg(pool)
 export default {
   earlyAccess: true,
   schema: path.join(__dirname, 'schema.prisma'),
+  datasource: {
+    url: connectionString,
+  },
   migrate: {
     adapter,
   },

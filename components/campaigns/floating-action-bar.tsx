@@ -70,21 +70,21 @@ export function FloatingActionBar({
   const defaultPrimaryActions: FloatingAction[] = [
     {
       id: "add-lead",
-      label: "Add Lead",
+      label: "Ajouter un lead",
       icon: UserPlus,
       onClick: onAddLead,
       variant: "primary",
     },
     {
       id: "import-csv",
-      label: "Import CSV",
+      label: "Importer CSV",
       icon: Upload,
       href: campaignId ? `/campaigns/${campaignId}/import` : undefined,
       onClick: onImportCSV,
     },
     {
       id: "add-booking",
-      label: "Schedule RDV",
+      label: "Planifier RDV",
       icon: Calendar,
       onClick: onAddBooking,
     },
@@ -93,18 +93,18 @@ export function FloatingActionBar({
   const defaultSecondaryActions: FloatingAction[] = [
     {
       id: "settings",
-      label: "Settings",
+      label: "Paramètres",
       icon: Settings,
       onClick: onOpenSettings,
     },
     {
       id: "export",
-      label: "Export Data",
+      label: "Exporter les données",
       icon: Download,
     },
     {
       id: "delete",
-      label: "Delete Campaign",
+      label: "Supprimer la campagne",
       icon: Trash2,
       onClick: onDelete,
       variant: "danger",
@@ -150,7 +150,7 @@ export function FloatingActionBar({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              {isExpanded ? "Collapse" : "Expand"}
+              {isExpanded ? "Réduire" : "Développer"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -231,7 +231,7 @@ export function FloatingActionBar({
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="top">More actions</TooltipContent>
+              <TooltipContent side="top">Plus d'actions</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -272,7 +272,7 @@ export function FloatingActionBar({
 // Simple version for campaigns list page
 export function FloatingCreateButton({
   onClick,
-  label = "New Campaign",
+  label = "Nouvelle campagne",
 }: {
   onClick?: () => void;
   label?: string;

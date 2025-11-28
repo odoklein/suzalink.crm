@@ -69,9 +69,11 @@ export async function GET(
       }
     }
 
-    // Meeting type filtering
-    if (meetingType && (meetingType === "PHYSICAL" || meetingType === "ONLINE")) {
-      where.meetingType = meetingType;
+    // Meeting type filtering - query by relation's isPhysical field
+    if (meetingType === "PHYSICAL") {
+      where.meetingType = { isPhysical: true };
+    } else if (meetingType === "ONLINE") {
+      where.meetingType = { isPhysical: false };
     }
 
     // Get all bookings for leads in this campaign

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, Eye, Phone, Mail, Download, Clock, Calendar, Play, Loader2, Workflow } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Phone, PhoneCall, Mail, Download, Clock, Calendar, Play, Loader2, Workflow } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -89,6 +89,7 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
   const [currentAutoCallLead, setCurrentAutoCallLead] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedLeadForWorkspace, setSelectedLeadForWorkspace] = useState<string | null>(null);
+  const [autoInitiateCall, setAutoInitiateCall] = useState(false);
   
   const limit = 25; // Reduced for better performance
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -153,7 +154,24 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
     return date.toLocaleDateString("fr-FR");
   };
 
-  const statusOptions = ["New", "Locked", "Contacted", "Qualified", "Nurture", "Lost"];
+  // Fetch campaign statuses
+  const { data: campaignStatuses = [] } = useQuery({
+    queryKey: ["campaign-statuses", campaignId],
+    queryFn: async () => {
+      const res = await fetch(`/api/campaigns/${campaignId}/statuses`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!campaignId,
+    staleTime: 60000,
+  });
+
+  const statusOptions = useMemo(() => {
+    if (campaignStatuses.length > 0) {
+      return campaignStatuses.sort((a: any, b: any) => a.order - b.order).map((s: any) => s.name);
+    }
+    return ["New", "Locked", "Contacted", "Qualified", "Nurture", "Lost"];
+  }, [campaignStatuses]);
 
   const getStatusLabel = (status: string) => STATUS_LABELS[status] || status;
 
@@ -273,6 +291,7 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
       setAutoCallEnabled(false);
       setCurrentAutoCallLead(null);
       setSelectedLeadForWorkspace(null);
+      setAutoInitiateCall(false);
     }
   };
 
@@ -371,6 +390,9 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
                     onCheckedChange={handleSelectAll}
                   />
                 </th>
+                <th className="px-2 py-3 w-10">
+                  <span className="sr-only">Appeler</span>
+                </th>
                 <SortableColumnHeader
                   label="Nom"
                   sortKey="name"
@@ -466,6 +488,23 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
                         checked={selectedIds.includes(lead.id)}
                         onCheckedChange={() => handleSelect(lead.id)}
                       />
+                    </td>
+                    <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
+                      {lead.standardData?.phone && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 transition-all hover:scale-110"
+                          onClick={() => {
+                            setSelectedLeadForWorkspace(lead.id);
+                            setAutoInitiateCall(true);
+                            setDrawerOpen(true);
+                          }}
+                          title="Appeler et ouvrir le lead"
+                        >
+                          <PhoneCall className="h-4 w-4" />
+                        </Button>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -595,6 +634,8 @@ export function LeadTable({ campaignId, schemaConfig = [], onLeadClick }: LeadTa
         leadId={selectedLeadForWorkspace}
         autoAdvance={autoCallEnabled && !selectedLeadForWorkspace}
         onLeadChange={handleDrawerLeadChange}
+        autoInitiateCall={autoInitiateCall}
+        onCallInitiated={() => setAutoInitiateCall(false)}
       />
     </div>
   );

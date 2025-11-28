@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,8 @@ type ProspectingDrawerProps = {
   leadId?: string | null;
   autoAdvance?: boolean;
   onLeadChange?: (leadId: string | null) => void;
+  autoInitiateCall?: boolean;
+  onCallInitiated?: () => void;
 };
 
 // Notion-style inline editable field
@@ -188,6 +191,8 @@ export function ProspectingDrawer({
   leadId,
   autoAdvance = false,
   onLeadChange,
+  autoInitiateCall = false,
+  onCallInitiated,
 }: ProspectingDrawerProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -268,6 +273,29 @@ export function ProspectingDrawer({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, currentLead]);
+
+  // Auto-initiate call when requested
+  useEffect(() => {
+    if (autoInitiateCall && currentLead && open) {
+      const phone = currentLead.standardData?.phone;
+      if (phone) {
+        // Small delay to ensure drawer is visible
+        const timer = setTimeout(() => {
+          // Try Aircall first, fallback to tel: link
+          if (typeof window !== "undefined" && (window as any).Aircall) {
+            const formattedPhone = phone.replace(/\D/g, "");
+            (window as any).Aircall("dial", formattedPhone);
+          } else {
+            window.location.href = `tel:${phone}`;
+          }
+          onCallInitiated?.();
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        onCallInitiated?.();
+      }
+    }
+  }, [autoInitiateCall, currentLead, open, onCallInitiated]);
 
   const getNextLeadMutation = useMutation({
     mutationFn: async () => {
@@ -591,6 +619,7 @@ export function ProspectingDrawer({
           {/* Loading State */}
           {!currentLead ? (
             <div className="flex-1 flex items-center justify-center p-6">
+              <SheetTitle className="sr-only">Chargement du prospect</SheetTitle>
               <div className="text-center space-y-4 max-w-[280px]">
                 {getNextLeadMutation.isPending ? (
                   <>
@@ -628,9 +657,9 @@ export function ProspectingDrawer({
               {/* Header - Compact */}
               <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-base truncate">
+                  <SheetTitle className="font-semibold text-base truncate">
                     {`${standardData.firstName || ""} ${standardData.lastName || ""}`.trim() || "Lead"}
-                  </h2>
+                  </SheetTitle>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground truncate">
                       {currentLead?.campaign?.name}

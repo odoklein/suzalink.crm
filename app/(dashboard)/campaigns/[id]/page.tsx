@@ -88,16 +88,16 @@ export default function CampaignDetailPage() {
   const handleAddLead = () => {
     // TODO: Open add lead dialog
     toast({
-      title: "Coming soon",
-      description: "Add lead functionality will be available soon.",
+      title: "Bientôt disponible",
+      description: "L'ajout de lead sera bientôt disponible.",
     });
   };
 
   const handleAddBooking = () => {
     // TODO: Open add booking dialog
     toast({
-      title: "Coming soon",
-      description: "Schedule booking functionality will be available soon.",
+      title: "Bientôt disponible",
+      description: "La prise de rendez-vous sera bientôt disponible.",
     });
   };
 
@@ -109,14 +109,14 @@ export default function CampaignDetailPage() {
       if (!res.ok) throw new Error("Failed to delete");
 
       toast({
-        title: "Success",
-        description: "Campaign deleted successfully",
+        title: "Succès",
+        description: "Campagne supprimée avec succès",
       });
       router.push("/campaigns");
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete campaign",
+        title: "Erreur",
+        description: "Échec de la suppression de la campagne",
         variant: "destructive",
       });
     }
@@ -145,16 +145,16 @@ export default function CampaignDetailPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Campaign not found
+            Campagne introuvable
           </h2>
           <p className="text-gray-500 mb-4">
-            The campaign you're looking for doesn't exist or has been deleted.
+            La campagne que vous recherchez n'existe pas ou a été supprimée.
           </p>
           <button
             onClick={() => router.push("/campaigns")}
             className="text-primary-600 hover:text-primary-700 font-medium"
           >
-            Back to campaigns
+            Retour aux campagnes
           </button>
         </div>
       </div>
@@ -218,8 +218,8 @@ export default function CampaignDetailPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Delete Campaign"
-        description="Are you sure you want to delete"
+        title="Supprimer la campagne"
+        description="Êtes-vous sûr de vouloir supprimer"
         itemName={campaign.name}
       />
     </>

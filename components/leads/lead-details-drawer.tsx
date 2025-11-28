@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -344,6 +345,7 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
         <SheetContent className="w-full sm:max-w-[440px] p-0 border-l shadow-2xl overflow-hidden flex flex-col">
         {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
+              <SheetTitle className="sr-only">Chargement</SheetTitle>
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : lead ? (
@@ -351,9 +353,9 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
               {/* Header */}
               <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-base truncate">
+                  <SheetTitle className="font-semibold text-base truncate">
                     {`${standardData.firstName || ""} ${standardData.lastName || ""}`.trim() || "Lead"}
-                  </h2>
+                  </SheetTitle>
                   <span className="text-xs text-muted-foreground">{lead.campaign?.name}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -544,6 +546,7 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
+              <SheetTitle className="sr-only">Erreur</SheetTitle>
               <p className="text-muted-foreground">Lead non trouvé</p>
             </div>
           )}

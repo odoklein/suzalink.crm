@@ -70,10 +70,12 @@ export async function POST(request: NextRequest) {
       passwordHash = await hashPassword(randomPassword);
     }
 
-    // Get organization
-    const organization = await prisma.organization.findFirst();
+    // Get or create organization
+    let organization = await prisma.organization.findFirst();
     if (!organization) {
-      return NextResponse.json({ error: "No organization found" }, { status: 500 });
+      organization = await prisma.organization.create({
+        data: { name: "Suzali Conseil" },
+      });
     }
 
     const user = await prisma.user.create({
@@ -89,9 +91,28 @@ export async function POST(request: NextRequest) {
     // TODO: Send invite email if sendInvite is true
 
     return NextResponse.json(user, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating user:", error);
-    return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    
+    // Provide more specific error messages
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Un utilisateur avec cet email existe déjà" },
+        { status: 400 }
+      );
+    }
+    
+    if (error.code === "P2003") {
+      return NextResponse.json(
+        { error: "Organisation invalide" },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: error.message || "Échec de la création de l'utilisateur" },
+      { status: 500 }
+    );
   }
 }
 

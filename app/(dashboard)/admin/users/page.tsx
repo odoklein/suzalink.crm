@@ -130,15 +130,15 @@ export default function AdminUsersPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-users-stats"] });
       toast({
         title: "Succès",
-        description: "Utilisateur désactivé avec succès",
+        description: "Utilisateur supprimé avec succès",
       });
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Erreur",
-        description: "Impossible de désactiver l'utilisateur",
+        description: error.message || "Impossible de supprimer l'utilisateur",
         variant: "destructive",
       });
     },
@@ -526,7 +526,7 @@ export default function AdminUsersPage() {
                             {user.isActive ? (
                               <>
                                 <UserX className="h-4 w-4 mr-2" />
-                                Désactiver
+                                Supprimer
                               </>
                             ) : (
                               <>
@@ -564,8 +564,8 @@ export default function AdminUsersPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={() => userToDelete && deleteMutation.mutate(userToDelete.id)}
-        title="Désactiver l'utilisateur"
-        description={`Êtes-vous sûr de vouloir désactiver ${userToDelete?.email} ? L'utilisateur perdra l'accès au système, mais ses données historiques seront conservées.`}
+        title="Supprimer l'utilisateur"
+        description={`Êtes-vous sûr de vouloir supprimer ${userToDelete?.email} ? Cette action est irréversible et supprimera définitivement l'utilisateur de la base de données.`}
       />
     </div>
   );
