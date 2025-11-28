@@ -84,13 +84,17 @@ export default function AdminUsersPage() {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const { data: users = [], isLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading, error } = useQuery<User[]>({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("Failed to fetch users");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to fetch users" }));
+        throw new Error(error.error || "Failed to fetch users");
+      }
       return res.json();
     },
+    retry: 1,
   });
 
   const toggleActiveMutation = useMutation({
@@ -259,6 +263,24 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#1A6BFF]" />
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-[1440px] mx-auto">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Erreur de chargement</h2>
+            <p className="text-muted-foreground mb-4">
+              {error instanceof Error ? error.message : "Impossible de charger les utilisateurs"}
+            </p>
+            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })} variant="outline">
+              Réessayer
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -58,6 +58,9 @@ import {
   ExternalLink,
   ArrowRight,
   Database,
+  User,
+  Info,
+  Settings,
 } from "lucide-react";
 import { ClickToDial } from "@/components/aircall/click-to-dial";
 import { useToast } from "@/hooks/use-toast";
@@ -177,6 +180,18 @@ function StatusBadge({ status, color }: { status: string; color?: string }) {
   );
 }
 
+// Section divider component
+function SectionDivider({ title, icon: Icon }: { title: string; icon?: any }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-y">
+      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        {title}
+      </span>
+    </div>
+  );
+}
+
 export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDrawerProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -238,6 +253,10 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast({ title: "Statut mis à jour", description: "Le statut du lead a été modifié avec succès" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le statut", variant: "destructive" });
     },
   });
 
@@ -310,7 +329,26 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
   const schemaConfig = lead?.campaign?.schemaConfig || [];
   const activities = lead?.activities || [];
 
-  const currentStatus = campaignStatuses.find((s: any) => s.id === lead?.statusId || s.id === lead?.statusConfig?.id);
+  // Get current status - prioritize statusConfig from API, then find from campaignStatuses
+  const currentStatus = useMemo(() => {
+    // First check if we have statusConfig from the API response
+    if (lead?.statusConfig?.name) {
+      return lead.statusConfig;
+    }
+    // Otherwise find from campaignStatuses
+    if (lead?.statusId) {
+      return campaignStatuses.find((s: any) => s.id === lead.statusId);
+    }
+    // Fallback to legacy status
+    if (lead?.status && !lead.status.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return { name: lead.status, color: undefined };
+    }
+    return null;
+  }, [lead?.statusConfig, lead?.statusId, lead?.status, campaignStatuses]);
+
+  // Get status display name
+  const statusDisplayName = currentStatus?.name || lead?.statusConfig?.name || "Nouveau";
+  const statusDisplayColor = currentStatus?.color || lead?.statusConfig?.color;
 
   // Available fields for column selection
   const availableFields = useMemo(() => {
@@ -341,17 +379,20 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
 
   return (
     <TooltipProvider>
-    <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-[440px] p-0 border-l shadow-2xl overflow-hidden flex flex-col">
-        {isLoading ? (
+      <Sheet open={open} onOpenChange={onOpenChange} modal={true}>
+        <SheetContent 
+          className="w-full sm:max-w-[440px] p-0 border-l shadow-2xl overflow-hidden flex flex-col z-[100]"
+          style={{ zIndex: 100 }}
+        >
+          {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <SheetTitle className="sr-only">Chargement</SheetTitle>
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : lead ? (
-          <>
+            </div>
+          ) : lead ? (
+            <>
               {/* Header */}
-              <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+              <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between sticky top-0 z-10 bg-background">
                 <div className="flex-1 min-w-0">
                   <SheetTitle className="font-semibold text-base truncate">
                     {`${standardData.firstName || ""} ${standardData.lastName || ""}`.trim() || "Lead"}
@@ -361,15 +402,15 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                 <div className="flex items-center gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                  <Button
+                      <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                    onClick={() => {
+                        onClick={() => {
                           router.push(`/leads/${leadId}`);
-                      onOpenChange(false);
-                    }}
-                  >
+                          onOpenChange(false);
+                        }}
+                      >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -383,14 +424,15 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
-                {/* Status */}
-                <div className="px-4 py-3 border-b">
+                {/* SECTION 1: Status Change */}
+                <SectionDivider title="Statut" icon={Settings} />
+                <div className="px-4 py-3 border-b bg-muted/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Statut</span>
+                    <span className="text-xs font-medium text-muted-foreground">Statut actuel</span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="outline-none">
-                          <StatusBadge status={currentStatus?.name || lead.status || "Nouveau"} color={currentStatus?.color} />
+                          <StatusBadge status={statusDisplayName} color={statusDisplayColor} />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
@@ -398,6 +440,7 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                           <DropdownMenuItem
                             key={status.id}
                             onClick={() => updateStatusMutation.mutate({ leadId: lead.id, status: status.id })}
+                            disabled={updateStatusMutation.isPending}
                           >
                             <span className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: status.color }} />
                             {status.name}
@@ -408,9 +451,9 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                   </div>
                 </div>
 
-                {/* Contact Info */}
+                {/* SECTION 2: Contact Information */}
+                <SectionDivider title="Informations de contact" icon={User} />
                 <div className="px-4 py-3 border-b space-y-0.5">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Contact</p>
                   <InlineField
                     icon={AtSign}
                     label="Email"
@@ -439,25 +482,27 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                   />
                 </div>
 
-                {/* Custom Fields */}
+                {/* SECTION 3: Custom Data Fields */}
                 {schemaConfig.length > 0 && (
-                  <div className="px-4 py-3 border-b space-y-0.5">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Données</p>
-                    {schemaConfig.map((field: any) => (
-                      <InlineField
-                        key={field.key}
-                        icon={Hash}
-                        label={field.label || field.key}
-                        value={customData[field.key]}
-                        onSave={(v) => updateLeadFieldMutation.mutate({ field: field.key, value: v, isCustom: true })}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <SectionDivider title="Données personnalisées" icon={Info} />
+                    <div className="px-4 py-3 border-b space-y-0.5">
+                      {schemaConfig.map((field: any) => (
+                        <InlineField
+                          key={field.key}
+                          icon={Hash}
+                          label={field.label || field.key}
+                          value={customData[field.key]}
+                          onSave={(v) => updateLeadFieldMutation.mutate({ field: field.key, value: v, isCustom: true })}
+                        />
+                      ))}
+                    </div>
+                  </>
                 )}
 
-                {/* Quick Actions */}
+                {/* SECTION 4: Quick Actions */}
+                <SectionDivider title="Actions rapides" icon={MessageSquare} />
                 <div className="px-4 py-3 border-b">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Actions</p>
                   <div className="flex gap-2">
                     {standardData.phone && <ClickToDial phoneNumber={standardData.phone} className="flex-1 h-9" />}
                     {standardData.email && (
@@ -471,12 +516,13 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                       </Button>
                     )}
                   </div>
-                    </div>
+                </div>
 
-                {/* Bookings */}
+                {/* SECTION 5: Bookings */}
+                <SectionDivider title="Rendez-vous" icon={Calendar} />
                 <div className="px-4 py-3 border-b">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Rendez-vous</p>
+                    <span className="text-xs text-muted-foreground">Historique des RDV</span>
                     <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setBookingDialogOpen(true)}>
                       <Plus className="h-3 w-3 mr-1" />
                       Nouveau
@@ -506,9 +552,9 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                   )}
                 </div>
 
-                {/* Notes */}
+                {/* SECTION 6: Notes */}
+                <SectionDivider title="Notes et historique" icon={FileText} />
                 <div className="px-4 py-3">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notes</p>
                   {activities.filter((a) => a.type === "NOTE").length > 0 && (
                     <div className="space-y-1.5 mb-3 max-h-32 overflow-y-auto">
                       {activities.filter((a) => a.type === "NOTE").slice(0, 3).map((activity) => (
@@ -530,7 +576,7 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                       rows={2}
                       className="text-sm resize-none"
                     />
-                <Button
+                    <Button
                       onClick={() => addNoteMutation.mutate()}
                       disabled={!note.trim() || addNoteMutation.isPending}
                       variant="secondary"
@@ -576,7 +622,7 @@ export function LeadDetailsDrawer({ open, onOpenChange, leadId }: LeadDetailsDra
                 <Button type="button" variant={bookingForm.meetingType === "ONLINE" ? "default" : "outline"} className="h-9" onClick={() => setBookingForm({ ...bookingForm, meetingType: "ONLINE" })}>
                   <Video className="h-4 w-4 mr-2" />
                   En ligne
-                  </Button>
+                </Button>
               </div>
             </div>
 

@@ -91,14 +91,18 @@ export default function AccountDetailPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedToken, setCopiedToken] = useState(false);
 
-  const { data: account, isLoading: accountLoading } = useQuery<Account>({
+  const { data: account, isLoading: accountLoading, error: accountError } = useQuery<Account>({
     queryKey: ["account", accountId],
     queryFn: async () => {
       const res = await fetch(`/api/accounts/${accountId}`);
-      if (!res.ok) throw new Error("Échec du chargement du compte");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Account not found" }));
+        throw new Error(error.error || "Échec du chargement du compte");
+      }
       return res.json();
     },
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    retry: false, // Don't retry on 404
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery<StatsData>({
@@ -184,8 +188,22 @@ export default function AccountDetailPage() {
     );
   }
 
-  if (!account) {
-    return <div className="p-6">Compte introuvable</div>;
+  if (accountError || !account) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Compte introuvable</h2>
+            <p className="text-muted-foreground mb-4">
+              Le compte avec l'ID "{accountId}" n'existe pas ou vous n'avez pas les permissions pour y accéder.
+            </p>
+            <Button onClick={() => router.push("/accounts")} variant="outline">
+              Retour à la liste des comptes
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
