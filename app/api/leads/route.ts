@@ -3,8 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs";
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (campaignId) {
       where.campaignId = campaignId;
       
-      // For BD users, verify they have access to this campaign
+      // For BD users, verify they have access to this campaign and filter by assignment
       if (session.user.role === "BD") {
         const assignment = await prisma.campaignAssignment.findUnique({
           where: {
@@ -54,30 +52,15 @@ export async function GET(request: NextRequest) {
             { status: 403 }
           );
         }
+
+        // BD users only see leads assigned to them in the campaign
+        where.assignedBdId = session.user.id;
       }
     } else {
-      // If no campaignId specified, for BD users, only show leads from their assigned campaigns
+      // If no campaignId specified, for BD users, only show leads assigned to them
       if (session.user.role === "BD") {
-        const assignedCampaigns = await prisma.campaignAssignment.findMany({
-          where: { userId: session.user.id },
-          select: { campaignId: true },
-        });
-        
-        const assignedCampaignIds = assignedCampaigns.map((a) => a.campaignId);
-        
-        if (assignedCampaignIds.length === 0) {
-          return NextResponse.json({
-            leads: [],
-            pagination: {
-              page,
-              limit,
-              total: 0,
-              totalPages: 0,
-            },
-          });
-        }
-        
-        where.campaignId = { in: assignedCampaignIds };
+        // BD users only see leads assigned to them
+        where.assignedBdId = session.user.id;
       }
     }
     

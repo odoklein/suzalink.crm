@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import Link from "next/link";
 import { ExternalLink, Users, ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -116,7 +117,7 @@ export function RecentDeals({ deals }: RecentDealsProps) {
               </div>
               <div className="flex items-center gap-2 ml-4">
                 <p className="text-xs text-text-body">
-                  {formatDistanceToNow(new Date(deal.createdAt), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(deal.createdAt), { addSuffix: true, locale: fr })}
                 </p>
                 <ArrowRight className="h-4 w-4 text-text-body opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>

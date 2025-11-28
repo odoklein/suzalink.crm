@@ -234,16 +234,16 @@ export function groupNotificationsByDate(notifications: Notification[]): Record<
     let groupKey: string;
     
     if (notificationDate.getTime() === today.getTime()) {
-      groupKey = 'Today';
+      groupKey = "Aujourd'hui";
     } else if (notificationDate.getTime() === yesterday.getTime()) {
-      groupKey = 'Yesterday';
+      groupKey = 'Hier';
     } else if (date.getTime() > sevenDaysAgo.getTime()) {
-      // Format as "24 May" style
+      // Format as "24 mai" style in French
       const day = date.getDate();
-      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const month = date.toLocaleDateString('fr-FR', { month: 'short' });
       groupKey = `${day} ${month}`;
     } else {
-      groupKey = 'Earlier';
+      groupKey = 'Plus ancien';
     }
     
     if (!groups[groupKey]) {

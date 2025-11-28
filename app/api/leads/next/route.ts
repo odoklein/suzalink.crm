@@ -3,8 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs";
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -43,7 +41,11 @@ export async function POST(request: NextRequest) {
 
     // Use smart prioritization with lead scoring
     // First, try to get high-priority leads (score > 70) or recently touched leads
-    const result = await prisma.$queryRaw<Array<{
+    // For BD users, only fetch leads assigned to them
+    const userId = session.user.id;
+    const isBD = session.user.role === "BD";
+
+    let result: Array<{
       id: string;
       campaign_id: string;
       status: string;
@@ -53,25 +55,46 @@ export async function POST(request: NextRequest) {
       locked_by_user_id: string | null;
       created_at: Date;
       updated_at: Date;
-    }>>`
-      SELECT * FROM leads
-      WHERE campaign_id = ${campaignId}
-        AND status = 'New'
-        AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '30 minutes')
-      ORDER BY 
-        -- Prioritize leads with high scores (if available in customData)
-        CASE 
-          WHEN custom_data->>'leadScore' IS NOT NULL 
-          THEN CAST(custom_data->>'leadScore' AS INTEGER)
-          ELSE 0 
-        END DESC,
-        -- Then prioritize leads with recent updates (potential warm leads)
-        updated_at DESC,
-        -- Finally, oldest leads first (FIFO for equal priority)
-        created_at ASC
-      LIMIT 1
-      FOR UPDATE SKIP LOCKED
-    `;
+    }>;
+
+    if (isBD) {
+      // BD users only see leads assigned to them
+      result = await prisma.$queryRaw`
+        SELECT * FROM leads
+        WHERE campaign_id = ${campaignId}
+          AND status = 'New'
+          AND assigned_bd_id = ${userId}
+          AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '30 minutes')
+        ORDER BY 
+          CASE 
+            WHEN custom_data->>'leadScore' IS NOT NULL 
+            THEN CAST(custom_data->>'leadScore' AS INTEGER)
+            ELSE 0 
+          END DESC,
+          updated_at DESC,
+          created_at ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `;
+    } else {
+      // Admin/Manager see all leads
+      result = await prisma.$queryRaw`
+        SELECT * FROM leads
+        WHERE campaign_id = ${campaignId}
+          AND status = 'New'
+          AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '30 minutes')
+        ORDER BY 
+          CASE 
+            WHEN custom_data->>'leadScore' IS NOT NULL 
+            THEN CAST(custom_data->>'leadScore' AS INTEGER)
+            ELSE 0 
+          END DESC,
+          updated_at DESC,
+          created_at ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `;
+    }
 
     if (result.length === 0) {
       return NextResponse.json(

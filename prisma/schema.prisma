@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -17,19 +17,11 @@ enum UserRole {
   DEVELOPER
 }
 
-enum CampaignStatus {
+// Renamed from CampaignStatus to avoid conflict with new CampaignStatus model
+enum CampaignWorkflowStatus {
   Draft
   Active
   Paused
-}
-
-enum LeadStatus {
-  New
-  Locked
-  Contacted
-  Qualified
-  Nurture
-  Lost
 }
 
 enum ActivityType {
@@ -99,6 +91,7 @@ model User {
   accountAssignments   AccountAssignment[]
   calendarIntegrations CalendarIntegration[]
   bookings             Booking[]
+  approvedBookings     Booking[]            @relation("BookingApprover")
   uploadedFiles        AccountFile[]
   ownedProjects        Project[]            @relation("ProjectOwner")
   projectMemberships   ProjectMember[]
@@ -112,8 +105,9 @@ model User {
   emailLabels         EmailLabel[]
   emailSyncStates     EmailSyncState[]
   
-  // Contact portal bookings
-  contactBookings     ContactBooking[]
+  // Weekly planning relations
+  weeklyAssignments       WeeklyAssignment[] @relation("AssignedUser")
+  createdWeeklyAssignments WeeklyAssignment[] @relation("AssignmentCreator")
 
   @@map("users")
 }
@@ -135,6 +129,7 @@ model Account {
   @@map("accounts")
 }
 
+// Simplified Interlocuteur - removed booking-related fields
 model Interlocuteur {
   id        String   @id @default(uuid())
   accountId String   @map("account_id")
@@ -145,63 +140,174 @@ model Interlocuteur {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Portal access fields
+  // Portal access fields (read-only portal)
   portalEnabled     Boolean   @default(false) @map("portal_enabled")
   portalToken       String?   @unique @map("portal_token") // Magic link token
   portalTokenExpiry DateTime? @map("portal_token_expiry")
   lastPortalAccess  DateTime? @map("last_portal_access")
 
-  account              Account                      @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  calendarIntegrations ContactCalendarIntegration[]
-  availabilitySlots    ContactAvailability[]
-  contactBookings      ContactBooking[]
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@map("interlocuteurs")
 }
 
 model Campaign {
-  id           String         @id @default(uuid())
-  accountId    String         @map("account_id")
+  id           String                 @id @default(uuid())
+  accountId    String                 @map("account_id")
   name         String
-  status       CampaignStatus @default(Draft)
-  startDate    DateTime?      @map("start_date")
-  schemaConfig Json?          @map("schema_config") // JSONB: Array of {key, label, type}
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  status       CampaignWorkflowStatus @default(Draft)
+  startDate    DateTime?              @map("start_date")
+  schemaConfig Json?                  @map("schema_config") // JSONB: Array of {key, label, type, required, options, defaultValue}
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
 
-  account     Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  leads       Lead[]
-  tasks       Task[]
-  assignedBDs CampaignAssignment[]
+  account           Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  leads             Lead[]
+  tasks             Task[]
+  assignedBDs       CampaignAssignment[]
+  statuses          LeadStatusConfig[]   // Dynamic statuses for this campaign
+  meetingTypes      CampaignMeetingType[] // Dynamic meeting types for this campaign
+  visitDays         CampaignVisitDay[]   // Physical visit calendar
+  weeklyAssignments WeeklyAssignment[]   // Weekly BD planning
 
   @@index([accountId])
   @@index([status])
   @@map("campaigns")
 }
 
-model Lead {
-  id             String     @id @default(uuid())
-  campaignId     String     @map("campaign_id")
-  status         LeadStatus @default(New)
-  assignedBdId   String?    @map("assigned_bd_id")
-  standardData   Json       @map("standard_data") // JSONB: {firstName, lastName, email, phone, jobTitle}
-  customData     Json?      @map("custom_data") // JSONB: Dynamic fields based on schema_config
-  lockedAt       DateTime?  @map("locked_at")
-  lockedByUserId String?    @map("locked_by_user_id")
-  createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @updatedAt @map("updated_at")
+// ============================================
+// DYNAMIC LEAD STATUS CONFIGURATION (Per-Campaign)
+// ============================================
 
-  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  assignedBD   User?         @relation("AssignedBD", fields: [assignedBdId], references: [id])
-  lockedByUser User?         @relation("LockedBy", fields: [lockedByUserId], references: [id])
-  activities   ActivityLog[]
-  emailThreads EmailThread[]
-  tasks        Task[]
-  bookings     Booking[]
-  emails       Email[]       // New email system relation
+model LeadStatusConfig {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  name       String   // e.g., "Nouveau", "Appelé", "RDV Placé", "Gagné"
+  color      String   @default("#6B7280") // Hex color for UI
+  order      Int      @default(0) // Display order
+  isDefault  Boolean  @default(false) @map("is_default") // Default status for new leads
+  isFinal    Boolean  @default(false) @map("is_final") // Terminal states like "Gagné", "Perdu"
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leads    Lead[]   @relation()
+
+  @@unique([campaignId, name])
+  @@index([campaignId])
+  @@index([order])
+  @@map("lead_status_configs")
+}
+
+// ============================================
+// DYNAMIC MEETING TYPES (Per-Campaign)
+// ============================================
+
+model CampaignMeetingType {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  name       String   // e.g., "Visite Physique", "Demo", "Appel de suivi"
+  icon       String?  // Lucide icon name (e.g., "MapPin", "Video", "Phone")
+  color      String   @default("#3B82F6") // Hex color
+  duration   Int      @default(60) // Default duration in minutes
+  isPhysical Boolean  @default(false) @map("is_physical") // Requires address/location
+  order      Int      @default(0) // Display order
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([campaignId, name])
+  @@index([campaignId])
+  @@index([order])
+  @@map("campaign_meeting_types")
+}
+
+// ============================================
+// CAMPAIGN VISIT CALENDAR (Physical Visit Days)
+// ============================================
+
+model CampaignVisitDay {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  date       DateTime @db.Date // Just the date, no time
+  notes      String?  @db.Text // Optional notes for this day
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([campaignId])
+  @@index([date])
+  @@map("campaign_visit_days")
+}
+
+// ============================================
+// WEEKLY BD PLANNING
+// ============================================
+
+model WeeklyAssignment {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id") // BD user being assigned
+  campaignId String   @map("campaign_id")
+  weekStart  DateTime @map("week_start") @db.Date // Monday of the week
+  notes      String?  @db.Text // Optional planning notes
+  createdBy  String   @map("created_by") // Manager/Admin who made the assignment
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user       User     @relation("AssignedUser", fields: [userId], references: [id], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  assignedBy User     @relation("AssignmentCreator", fields: [createdBy], references: [id])
+
+  @@unique([userId, campaignId, weekStart])
+  @@index([userId])
+  @@index([campaignId])
+  @@index([weekStart])
+  @@map("weekly_assignments")
+}
+
+// ============================================
+// LEAD (Modified to use dynamic status)
+// ============================================
+
+// Legacy enum kept for backward compatibility during migration
+enum LeadStatus {
+  New
+  Locked
+  Contacted
+  Qualified
+  Nurture
+  Lost
+}
+
+model Lead {
+  id             String      @id @default(uuid())
+  campaignId     String      @map("campaign_id")
+  status         LeadStatus? @default(New) // Legacy field - will be removed after migration
+  statusId       String?     @map("status_id") // New dynamic status reference
+  assignedBdId   String?     @map("assigned_bd_id")
+  standardData   Json        @map("standard_data") // JSONB: {firstName, lastName, email, phone, jobTitle}
+  customData     Json?       @map("custom_data") // JSONB: Dynamic fields based on schema_config
+  lockedAt       DateTime?   @map("locked_at")
+  lockedByUserId String?     @map("locked_by_user_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  campaign       Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  statusConfig   LeadStatusConfig? @relation(fields: [statusId], references: [id])
+  assignedBD     User?             @relation("AssignedBD", fields: [assignedBdId], references: [id])
+  lockedByUser   User?             @relation("LockedBy", fields: [lockedByUserId], references: [id])
+  activities     ActivityLog[]
+  emailThreads   EmailThread[]
+  tasks          Task[]
+  bookings       Booking[]
+  emails         Email[]           // New email system relation
 
   @@index([campaignId])
   @@index([status])
+  @@index([statusId])
   @@index([lockedAt])
   @@index([assignedBdId])
   @@map("leads")
@@ -435,35 +541,66 @@ model CalendarIntegration {
   @@map("calendar_integrations")
 }
 
-model Booking {
-  id                String    @id @default(uuid())
-  userId            String    @map("user_id")
-  leadId            String?   @map("lead_id")
-  title             String
-  description       String?   @db.Text
-  startTime         DateTime  @map("start_time")
-  endTime           DateTime  @map("end_time")
-  location          String? // Physical location or video call link
-  meetingType       String    @default("meeting") @map("meeting_type") // 'call', 'meeting', 'demo', 'follow_up'
-  status            String    @default("scheduled") // 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
-  attendees         Json? // Array of {name, email, status}
-  reminders         Json? // Array of reminder configurations
-  externalEventId   String?   @map("external_event_id") // Google Calendar event ID, etc.
-  externalProvider  String?   @map("external_provider") // 'google', 'apple', etc.
-  lastSyncedAt      DateTime? @map("last_synced_at")
-  metadata          Json? // Additional meeting data
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+// ============================================
+// ENHANCED BOOKING MODEL
+// ============================================
 
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lead Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+model Booking {
+  id                String      @id @default(uuid())
+  userId            String      @map("user_id")
+  leadId            String?     @map("lead_id")
+  meetingTypeId     String?     @map("meeting_type_id") // Reference to campaign meeting type
+  title             String
+  description       String?     @db.Text
+  startTime         DateTime    @map("start_time")
+  endTime           DateTime    @map("end_time")
+  location          String?     // Physical location or video call link
+  status            String      @default("scheduled") // 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
+  attendees         Json?       // Array of {name, email, status}
+  reminders         Json?       // Array of reminder configurations
+  externalEventId   String?     @map("external_event_id") // Google Calendar event ID, etc.
+  externalProvider  String?     @map("external_provider") // 'google', 'apple', etc.
+  lastSyncedAt      DateTime?   @map("last_synced_at")
+  metadata          Json?       // Additional meeting data
+  
+  // Approval workflow
+  approvalStatus    String      @default("on_hold") @map("approval_status") // 'on_hold', 'approved', 'rejected'
+  approvedBy        String?     @map("approved_by") // User ID who approved
+  approvedAt        DateTime?   @map("approved_at")
+  
+  // Physical meeting fields
+  address           String?     // Full address for physical meetings
+  city              String?     // City
+  postalCode        String?     @map("postal_code") // Postal code for grouping
+  latitude          Float?      // Latitude for proximity calculations
+  longitude         Float?      // Longitude for proximity calculations
+  
+  // Online meeting fields
+  onlineMeetingEmail String?    @map("online_meeting_email") // Email for online meeting link
+  
+  // Contact information (for backward compatibility)
+  contactName       String?     @map("contact_name")
+  contactEmail      String?     @map("contact_email")
+  contactPhone      String?     @map("contact_phone")
+  
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead        Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  meetingType CampaignMeetingType? @relation(fields: [meetingTypeId], references: [id])
+  approver    User?                @relation("BookingApprover", fields: [approvedBy], references: [id])
 
   @@index([userId])
   @@index([leadId])
+  @@index([meetingTypeId])
   @@index([startTime])
   @@index([endTime])
   @@index([status])
+  @@index([approvalStatus])
   @@index([externalEventId])
+  @@index([postalCode])
+  @@index([latitude, longitude])
   @@map("bookings")
 }
 
@@ -623,76 +760,6 @@ model MessageReaction {
   @@index([messageId])
   @@index([userId])
   @@map("message_reactions")
-}
-
-// ============================================
-// CONTACT PORTAL & CALENDAR INTEGRATION
-// ============================================
-
-// Calendar integration for contact portal
-model ContactCalendarIntegration {
-  id           String    @id @default(uuid())
-  contactId    String    @map("contact_id")
-  provider     String    // 'google', 'outlook'
-  accessToken  String    @map("access_token") @db.Text
-  refreshToken String?   @map("refresh_token") @db.Text
-  tokenExpiry  DateTime? @map("token_expiry")
-  email        String
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@unique([contactId, provider])
-  @@index([contactId])
-  @@map("contact_calendar_integrations")
-}
-
-// Availability slots set by contacts
-model ContactAvailability {
-  id           String    @id @default(uuid())
-  contactId    String    @map("contact_id")
-  dayOfWeek    Int       @map("day_of_week") // 0-6 (Sunday-Saturday)
-  startTime    String    @map("start_time") // "09:00" format
-  endTime      String    @map("end_time") // "17:00" format
-  timezone     String    @default("Europe/Paris")
-  isRecurring  Boolean   @default(true) @map("is_recurring")
-  specificDate DateTime? @map("specific_date") // For one-time availability
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@index([contactId])
-  @@index([dayOfWeek])
-  @@map("contact_availability")
-}
-
-// Bookings made by team members with contacts
-model ContactBooking {
-  id          String   @id @default(uuid())
-  contactId   String   @map("contact_id")
-  userId      String   @map("user_id") // Team member who booked
-  title       String
-  description String?  @db.Text
-  startTime   DateTime @map("start_time")
-  endTime     DateTime @map("end_time")
-  status      String   @default("pending") // 'pending', 'confirmed', 'cancelled', 'completed'
-  notes       String?  @db.Text
-  meetingLink String?  @map("meeting_link")
-  location    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  contact Interlocuteur @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  user    User          @relation(fields: [userId], references: [id])
-
-  @@index([contactId])
-  @@index([userId])
-  @@index([startTime])
-  @@index([status])
-  @@map("contact_bookings")
 }
 
 // ============================================

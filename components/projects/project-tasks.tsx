@@ -22,6 +22,8 @@ export function ProjectTasks({ projectId }: ProjectTasksProps) {
       if (!res.ok) throw new Error("Failed to fetch project tasks");
       return res.json();
     },
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const tasks = tasksData?.tasks || [];

@@ -399,47 +399,49 @@ export default function TasksPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30">
       <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-        {/* Header with Glass Effect */}
-        <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl shadow-primary-500/5 p-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 via-transparent to-cyan-500/5" />
+        {/* Header with Strong Contrast */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl shadow-slate-900/30 p-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-cyan-500/10" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/20 rounded-full blur-3xl -mr-32 -mt-32" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl -ml-24 -mb-24" />
           
           <div className="relative flex items-center justify-between mb-6">
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/30">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/40 ring-2 ring-primary-400/20">
                   <Sparkles className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-white tracking-tight">
                   Gestion des tâches
                 </h1>
               </div>
-              <p className="text-gray-500 ml-14">
+              <p className="text-slate-300 ml-14">
                 Organisez et suivez vos activités commerciales
               </p>
             </div>
             
             <div className="flex items-center gap-3">
               {/* View toggle */}
-              <div className="flex items-center bg-gray-100 rounded-xl p-1">
+              <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-xl p-1 border border-white/10">
                 <Button
-                  variant={viewMode === "kanban" ? "default" : "ghost"}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setViewMode("kanban")}
                   className={cn(
-                    "rounded-lg",
-                    viewMode === "kanban" && "shadow-md"
+                    "rounded-lg text-white/70 hover:text-white hover:bg-white/10",
+                    viewMode === "kanban" && "bg-white/20 text-white shadow-md"
                   )}
                 >
                   <LayoutGrid className="h-4 w-4 mr-2" />
                   Kanban
                 </Button>
                 <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setViewMode("list")}
                   className={cn(
-                    "rounded-lg",
-                    viewMode === "list" && "shadow-md"
+                    "rounded-lg text-white/70 hover:text-white hover:bg-white/10",
+                    viewMode === "list" && "bg-white/20 text-white shadow-md"
                   )}
                 >
                   <List className="h-4 w-4 mr-2" />
@@ -449,7 +451,7 @@ export default function TasksPage() {
               
               <Button 
                 onClick={() => setTaskCreateDrawerOpen(true)}
-                className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/30 rounded-xl"
+                className="bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600 shadow-lg shadow-primary-500/40 rounded-xl text-white font-medium"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle tâche
@@ -460,11 +462,11 @@ export default function TasksPage() {
           {/* Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 font-medium">Distribution des tâches</span>
-              <span className="text-gray-500">{taskCounts.total} tâches au total</span>
+              <span className="text-white font-medium">Distribution des tâches</span>
+              <span className="text-slate-400">{taskCounts.total} tâches au total</span>
             </div>
             
-            <div className="h-3 rounded-full bg-gray-100 overflow-hidden flex">
+            <div className="h-3 rounded-full bg-slate-700/50 overflow-hidden flex backdrop-blur-sm">
               {progressPercentages.completed > 0 && (
                 <div 
                   className="bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
@@ -493,20 +495,20 @@ export default function TasksPage() {
             
             <div className="flex items-center justify-center gap-6 text-xs">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                <span className="text-gray-600">Terminées ({taskCounts.completed})</span>
+                <div className="h-3 w-3 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/30" />
+                <span className="text-slate-300">Terminées ({taskCounts.completed})</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                <span className="text-gray-600">Aujourd'hui ({taskCounts.today})</span>
+                <div className="h-3 w-3 rounded-full bg-blue-400 shadow-lg shadow-blue-500/30" />
+                <span className="text-slate-300">Aujourd'hui ({taskCounts.today})</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-amber-500" />
-                <span className="text-gray-600">À venir ({taskCounts.upcoming})</span>
+                <div className="h-3 w-3 rounded-full bg-amber-400 shadow-lg shadow-amber-500/30" />
+                <span className="text-slate-300">À venir ({taskCounts.upcoming})</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-rose-500" />
-                <span className="text-gray-600">En retard ({taskCounts.overdue})</span>
+                <div className="h-3 w-3 rounded-full bg-rose-400 shadow-lg shadow-rose-500/30" />
+                <span className="text-slate-300">En retard ({taskCounts.overdue})</span>
               </div>
             </div>
           </div>

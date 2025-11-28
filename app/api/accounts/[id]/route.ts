@@ -22,6 +22,11 @@ export async function GET(
         },
         interlocuteurs: {
           orderBy: { createdAt: "desc" },
+          include: {
+            calendarIntegrations: {
+              where: { isActive: true },
+            },
+          },
         },
       },
     });

@@ -1,8 +1,9 @@
 /**
- * Contact Portal Bookings API
+ * Contact Portal Bookings API (Read-Only)
  * 
  * GET /api/contact-portal/bookings
- * Returns bookings for the authenticated contact
+ * Returns bookings for campaigns under the contact's account
+ * Contacts can only view bookings, not create/modify them
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -28,19 +29,73 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const now = new Date();
     const contactId = session.contact.id;
 
-    // Get upcoming bookings
-    const upcoming = await prisma.contactBooking.findMany({
+    // Get the contact's account
+    const contact = await prisma.interlocuteur.findUnique({
+      where: { id: contactId },
+      select: {
+        accountId: true,
+        account: {
+          select: {
+            id: true,
+            companyName: true,
+          },
+        },
+      },
+    });
+
+    if (!contact) {
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+    }
+
+    const now = new Date();
+
+    // Get upcoming bookings for leads in campaigns under this account
+    const upcoming = await prisma.booking.findMany({
       where: {
-        contactId,
+        lead: {
+          campaign: {
+            accountId: contact.accountId,
+          },
+        },
         startTime: { gte: now },
+        approvalStatus: "approved", // Only show approved bookings to contacts
       },
       orderBy: { startTime: "asc" },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        location: true,
+        address: true,
+        city: true,
+        meetingType: {
+          select: {
+            name: true,
+            icon: true,
+            color: true,
+            isPhysical: true,
+          },
+        },
         user: {
-          select: { email: true, avatar: true },
+          select: { 
+            email: true, 
+            avatar: true,
+          },
+        },
+        lead: {
+          select: {
+            standardData: true,
+            campaign: {
+              select: {
+                name: true,
+              },
+            },
+          },
         },
       },
     });
@@ -49,21 +104,83 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const past = await prisma.contactBooking.findMany({
+    const past = await prisma.booking.findMany({
       where: {
-        contactId,
+        lead: {
+          campaign: {
+            accountId: contact.accountId,
+          },
+        },
         endTime: { lt: now, gte: thirtyDaysAgo },
+        approvalStatus: "approved",
       },
       orderBy: { startTime: "desc" },
       take: 20,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        location: true,
+        address: true,
+        city: true,
+        meetingType: {
+          select: {
+            name: true,
+            icon: true,
+            color: true,
+            isPhysical: true,
+          },
+        },
         user: {
-          select: { email: true, avatar: true },
+          select: { 
+            email: true, 
+            avatar: true,
+          },
+        },
+        lead: {
+          select: {
+            standardData: true,
+            campaign: {
+              select: {
+                name: true,
+              },
+            },
+          },
         },
       },
     });
 
-    return NextResponse.json({ upcoming, past });
+    // Get campaign visit days (physical visit calendar)
+    const visitDays = await prisma.campaignVisitDay.findMany({
+      where: {
+        campaign: {
+          accountId: contact.accountId,
+        },
+        date: { gte: now },
+      },
+      orderBy: { date: "asc" },
+      take: 30,
+      select: {
+        id: true,
+        date: true,
+        notes: true,
+        campaign: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ 
+      upcoming, 
+      past, 
+      visitDays,
+      account: contact.account,
+    });
   } catch (error: any) {
     console.error("Error fetching bookings:", error);
     return NextResponse.json(
@@ -72,7 +189,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-
-
-

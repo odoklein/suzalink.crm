@@ -1,56 +1,148 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
-import { Upload, File, Check, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { 
+  Check, 
+  ArrowRight, 
+  ArrowLeft, 
+  Loader2,
+  Upload,
+  Table,
+  GitBranch,
+  Rocket,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { SchemaField, DropdownOption } from "@/components/campaigns/schema-config-editor";
+import { cn } from "@/lib/utils";
+
+// Import new components
+import { UploadDropzone } from "./upload-dropzone";
+import { DataPreviewTable } from "./data-preview-table";
+import { MappingCanvas, FieldMapping } from "./mapping-canvas";
+import { ImportProgress, ImportResult } from "./import-progress";
 
 type Step = "upload" | "preview" | "mapping" | "importing";
 
-type CSVHeader = string;
 type CSVRow = Record<string, string>;
 
-type Mapping = {
-  csvColumn: string;
-  systemField: string;
-  customFieldKey?: string;
-  fieldType?: SchemaField["type"];
-  fieldLabel?: string;
-  dropdownOptions?: DropdownOption[];
-  required?: boolean;
-};
+interface FileInfo {
+  name: string;
+  size: number;
+  type: string;
+  rowCount?: number;
+  columnCount?: number;
+}
 
-const STANDARD_FIELDS = [
-  { key: "firstName", label: "First Name" },
-  { key: "lastName", label: "Last Name" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "jobTitle", label: "Job Title" },
+const STEPS: { key: Step; label: string; icon: typeof Upload }[] = [
+  { key: "upload", label: "Upload", icon: Upload },
+  { key: "preview", label: "Preview", icon: Table },
+  { key: "mapping", label: "Map Fields", icon: GitBranch },
+  { key: "importing", label: "Import", icon: Rocket },
 ];
+
+// Step indicator component
+function StepIndicator({ 
+  currentStep, 
+  steps,
+}: { 
+  currentStep: Step; 
+  steps: typeof STEPS;
+}) {
+  const currentIndex = steps.findIndex(s => s.key === currentStep);
+
+  return (
+    <div className="flex items-center justify-center">
+      <div className="flex items-center gap-1">
+        {steps.map((step, index) => {
+          const isActive = step.key === currentStep;
+          const isCompleted = index < currentIndex;
+          const Icon = step.icon;
+
+          return (
+            <div key={step.key} className="flex items-center">
+              {/* Step circle */}
+              <div
+                className={cn(
+                  "relative flex items-center justify-center transition-all duration-500",
+                  "h-12 w-12 rounded-full",
+                  isActive && "bg-primary-500 text-white shadow-lg shadow-primary-500/30 scale-110",
+                  isCompleted && "bg-success-500 text-white",
+                  !isActive && !isCompleted && "bg-gray-100 text-gray-400"
+                )}
+              >
+                {/* Pulse animation for active */}
+                {isActive && (
+                  <div className="absolute inset-0 rounded-full bg-primary-400 animate-ping opacity-20" />
+                )}
+                
+                {isCompleted ? (
+                  <Check className="h-5 w-5 animate-in zoom-in-50 duration-300" />
+                ) : (
+                  <Icon className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    isActive && "scale-110"
+                  )} />
+                )}
+              </div>
+
+              {/* Step label */}
+              <div className={cn(
+                "ml-2 mr-4 transition-all duration-300",
+                isActive ? "opacity-100" : "opacity-60"
+              )}>
+                <p className={cn(
+                  "text-xs font-medium",
+                  isActive ? "text-primary-600" : isCompleted ? "text-success-600" : "text-gray-500"
+                )}>
+                  Step {index + 1}
+                </p>
+                <p className={cn(
+                  "text-sm font-semibold",
+                  isActive ? "text-text-main" : "text-text-body"
+                )}>
+                  {step.label}
+                </p>
+              </div>
+
+              {/* Connector line */}
+              {index < steps.length - 1 && (
+                <div className={cn(
+                  "w-12 h-0.5 mr-4 rounded-full transition-all duration-500",
+                  index < currentIndex ? "bg-success-400" : "bg-gray-200"
+                )}>
+                  {/* Animated progress */}
+                  {index === currentIndex - 1 && (
+                    <div className="h-full bg-success-500 rounded-full animate-in slide-in-from-left duration-500" />
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
   const { toast } = useToast();
+  
+  // State
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
-  const [headers, setHeaders] = useState<CSVHeader[]>([]);
+  const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
+  const [headers, setHeaders] = useState<string[]>([]);
   const [preview, setPreview] = useState<CSVRow[]>([]);
-  const [mappings, setMappings] = useState<Mapping[]>([]);
+  const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
   const [filePath, setFilePath] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   // Fetch campaign schema config
   const { data: campaign } = useQuery({
@@ -64,23 +156,12 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
 
   const schemaConfig: SchemaField[] = campaign?.schemaConfig || [];
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      "text/csv": [".csv"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-    },
-    maxFiles: 1,
-    onDrop: async (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
-        setFile(acceptedFiles[0]);
-        await handleFileUpload(acceptedFiles[0]);
-      }
-    },
-  });
-
-  const handleFileUpload = async (uploadedFile: File) => {
+  // Handle file upload
+  const handleFileAccepted = useCallback(async (uploadedFile: File) => {
+    setFile(uploadedFile);
+    setUploadError(null);
     setIsUploading(true);
+
     try {
       const formData = new FormData();
       formData.append("file", uploadedFile);
@@ -90,50 +171,83 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to upload file");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to upload file");
+      }
 
       const data = await res.json();
+      
       setHeaders(data.headers);
       setPreview(data.preview);
       setFilePath(data.filePath);
-      setStep("preview");
-    } catch (error) {
+      setFileInfo({
+        name: uploadedFile.name,
+        size: uploadedFile.size,
+        type: uploadedFile.type,
+        columnCount: data.headers.length,
+        rowCount: data.totalRows || data.preview.length * 10, // Estimate if not provided
+      });
+
+      // Transition to preview
+      setTimeout(() => {
+        setStep("preview");
+      }, 500);
+    } catch (error: any) {
+      setUploadError(error.message || "Failed to upload file");
       toast({
-        title: "Error",
-        description: "Failed to upload file",
+        title: "Upload Failed",
+        description: error.message || "Failed to upload file",
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [campaignId, toast]);
 
-  const handleMapping = () => {
-    // Initialize mappings for all CSV columns
-    const initialMappings: Mapping[] = headers.map((header) => ({
-      csvColumn: header,
-      systemField: "skip",
-    }));
-    setMappings(initialMappings);
+  // Handle file rejection
+  const handleFileRejected = useCallback((message: string) => {
+    setUploadError(message);
+    toast({
+      title: "Invalid File",
+      description: message,
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  // Reset upload
+  const handleResetUpload = useCallback(() => {
+    setFile(null);
+    setFileInfo(null);
+    setUploadError(null);
+    setHeaders([]);
+    setPreview([]);
+    setFilePath("");
+  }, []);
+
+  // Proceed to mapping
+  const handleProceedToMapping = useCallback(() => {
     setStep("mapping");
-  };
+  }, []);
 
-  const updateMapping = (index: number, updates: Partial<Mapping>) => {
-    const updated = mappings.map((mapping, i) =>
-      i === index ? { ...mapping, ...updates } : mapping
-    );
-    setMappings(updated);
-  };
-
-  const [importResult, setImportResult] = useState<{
-    processed: number;
-    errors: number;
-    errorDetails?: Array<{ row: number; reason: string; data?: any }>;
-  } | null>(null);
-
-  const handleImport = async () => {
+  // Handle import
+  const handleImport = useCallback(async () => {
     setIsImporting(true);
+    setImportProgress(0);
     setImportResult(null);
+    setStep("importing");
+
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setImportProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 500);
+
     try {
       // Build mappings object and schema config
       const mappingsObj: Record<string, string> = {};
@@ -141,21 +255,23 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
       const existingFieldKeys = new Set(schemaConfig.map((f) => f.key));
 
       mappings.forEach((mapping) => {
-        if (mapping.systemField && mapping.systemField !== "skip") {
-          mappingsObj[mapping.csvColumn] = mapping.systemField;
-        } else if (mapping.customFieldKey) {
-          mappingsObj[mapping.csvColumn] = `custom:${mapping.customFieldKey}`;
-          
-          // Add to schema config if it doesn't exist
-          if (!existingFieldKeys.has(mapping.customFieldKey)) {
-            newSchemaFields.push({
-              key: mapping.customFieldKey,
-              label: mapping.fieldLabel || mapping.csvColumn,
-              type: mapping.fieldType || "text",
-              options: mapping.dropdownOptions || (mapping.fieldType === "dropdown" ? [] : undefined),
-              required: mapping.required || false,
-            });
-            existingFieldKeys.add(mapping.customFieldKey);
+        if (mapping.systemField && mapping.systemField !== "skip" && mapping.systemField !== "") {
+          if (mapping.systemField === "custom" && mapping.customFieldKey) {
+            mappingsObj[mapping.csvColumn] = `custom:${mapping.customFieldKey}`;
+            
+            // Add to schema config if it doesn't exist
+            if (!existingFieldKeys.has(mapping.customFieldKey)) {
+              newSchemaFields.push({
+                key: mapping.customFieldKey,
+                label: mapping.fieldLabel || mapping.csvColumn,
+                type: mapping.fieldType || "text",
+                options: mapping.dropdownOptions || (mapping.fieldType === "dropdown" ? [] : undefined),
+                required: mapping.required || false,
+              });
+              existingFieldKeys.add(mapping.customFieldKey);
+            }
+          } else {
+            mappingsObj[mapping.csvColumn] = mapping.systemField;
           }
         }
       });
@@ -170,458 +286,211 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
         }),
       });
 
+      clearInterval(progressInterval);
+      setImportProgress(100);
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to import CSV");
       }
 
       const result = await res.json();
-      setImportResult(result);
-      setIsImporting(false);
-      setStep("importing");
+      setImportResult({
+        success: result.success,
+        processed: result.processed,
+        errors: result.errors,
+        errorDetails: result.errorDetails,
+      });
 
       if (result.success) {
         if (result.errors > 0) {
           toast({
             title: "Import completed with errors",
-            description: `${result.processed} leads imported, ${result.errors} errors occurred. Check details below.`,
+            description: `${result.processed} leads imported, ${result.errors} errors occurred.`,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Import Complete",
+            title: "Import Successful",
             description: `Successfully imported ${result.processed} leads.`,
           });
         }
       }
     } catch (error: any) {
-      setIsImporting(false);
+      clearInterval(progressInterval);
+      setImportProgress(0);
+      setImportResult({
+        success: false,
+        processed: 0,
+        errors: 1,
+        errorDetails: [{ row: 0, reason: error.message || "Import failed" }],
+      });
       toast({
-        title: "Error",
+        title: "Import Failed",
         description: error.message || "Failed to import CSV",
         variant: "destructive",
       });
+    } finally {
+      setIsImporting(false);
     }
-  };
+  }, [campaignId, filePath, mappings, schemaConfig, toast]);
+
+  // Reset and import another
+  const handleImportAnother = useCallback(() => {
+    setStep("upload");
+    setFile(null);
+    setFileInfo(null);
+    setHeaders([]);
+    setPreview([]);
+    setMappings([]);
+    setImportResult(null);
+    setImportProgress(0);
+    setFilePath("");
+    setUploadError(null);
+  }, []);
+
+  // View leads
+  const handleViewLeads = useCallback(() => {
+    window.location.href = `/campaigns/${campaignId}`;
+  }, [campaignId]);
+
+  // Calculate if can proceed with import
+  const canImport = useMemo(() => {
+    return mappings.some(m => 
+      m.systemField && 
+      m.systemField !== "skip" && 
+      m.systemField !== ""
+    );
+  }, [mappings]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-5xl mx-auto">
       {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-4">
-        {(["upload", "preview", "mapping", "importing"] as Step[]).map((s, index) => (
-          <div key={s} className="flex items-center">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                step === s
-                  ? "bg-primary text-primary-foreground"
-                  : ["upload", "preview", "mapping"].indexOf(step) > index
-                  ? "bg-success-100 text-success-text"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {["upload", "preview", "mapping"].indexOf(step) > index ? (
-                <Check className="h-5 w-5" />
-              ) : (
-                index + 1
-              )}
-            </div>
-            {index < 3 && (
-              <div
-                className={`h-1 w-16 ${
-                  ["upload", "preview", "mapping"].indexOf(step) > index
-                    ? "bg-success-100"
-                    : "bg-muted"
-                }`}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      <StepIndicator currentStep={step} steps={STEPS} />
 
-      {/* Upload Step */}
-      {step === "upload" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload CSV File</CardTitle>
-            <CardDescription>Select or drag a CSV file to upload</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                isDragActive ? "border-primary bg-primary-100" : "border-border"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-body">
-                {isDragActive
-                  ? "Drop the file here"
-                  : "Drag & drop a CSV file here, or click to select"}
-              </p>
-              {file && (
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <File className="h-4 w-4" />
-                  <span className="text-sm">{file.name}</span>
-                </div>
-              )}
-              {isUploading && (
-                <div className="mt-4">
-                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Preview Step */}
-      {step === "preview" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview Data</CardTitle>
-            <CardDescription>Review the first 5 rows of your CSV</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    {headers.map((header) => (
-                      <th key={header} className="border p-2 text-left text-sm font-medium">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map((row, index) => (
-                    <tr key={index}>
-                      {headers.map((header) => (
-                        <td key={header} className="border p-2 text-sm">
-                          {row[header] || ""}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setStep("upload")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button onClick={handleMapping}>
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Mapping Step */}
-      {step === "mapping" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Map Columns</CardTitle>
-            <CardDescription>Map CSV columns to system fields or create custom fields</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {mappings.map((mapping, index) => (
-              <div key={index} className="p-4 border rounded-lg space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Label className="text-sm font-medium text-text-main">{mapping.csvColumn}</Label>
-                  </div>
-                  <div className="flex-1">
-                    <Select
-                      value={mapping.systemField || "skip"}
-                      onValueChange={(value) => {
-                        if (value === "custom") {
-                          const fieldKey = mapping.csvColumn.toLowerCase().replace(/\s+/g, "_");
-                          updateMapping(index, { 
-                            systemField: "", 
-                            customFieldKey: fieldKey,
-                            fieldLabel: mapping.csvColumn,
-                            fieldType: "text",
-                          });
-                        } else if (value === "skip") {
-                          updateMapping(index, { 
-                            systemField: "", 
-                            customFieldKey: undefined,
-                            fieldType: undefined,
-                            fieldLabel: undefined,
-                          });
-                        } else {
-                          updateMapping(index, { 
-                            systemField: value, 
-                            customFieldKey: undefined,
-                            fieldType: undefined,
-                            fieldLabel: undefined,
-                          });
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select field" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="skip">Skip</SelectItem>
-                        {STANDARD_FIELDS.map((field) => (
-                          <SelectItem key={field.key} value={field.key}>
-                            {field.label}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">Create Custom Field</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Custom Field Configuration */}
-                {mapping.customFieldKey && (
-                  <div className="grid grid-cols-2 gap-4 pt-3 border-t">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-text-body">Field Label</Label>
-                      <Input
-                        value={mapping.fieldLabel || ""}
-                        onChange={(e) => updateMapping(index, { fieldLabel: e.target.value })}
-                        placeholder="Field Label"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs text-text-body">Field Type</Label>
-                      <Select
-                        value={mapping.fieldType || "text"}
-                        onValueChange={(value) => {
-                          const updates: Partial<Mapping> = { fieldType: value as SchemaField["type"] };
-                          if (value !== "dropdown") {
-                            updates.dropdownOptions = undefined;
-                          } else if (!mapping.dropdownOptions) {
-                            updates.dropdownOptions = [];
-                          }
-                          updateMapping(index, updates);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="textarea">Textarea</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="currency">Currency</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="phone">Phone</SelectItem>
-                          <SelectItem value="url">URL</SelectItem>
-                          <SelectItem value="checkbox">Checkbox</SelectItem>
-                          <SelectItem value="dropdown">Dropdown</SelectItem>
-                          <SelectItem value="tags">Tags</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {mapping.fieldType === "dropdown" && (
-                      <div className="col-span-2 space-y-3">
-                        <Label className="text-xs text-text-body">Dropdown Options</Label>
-                        <div className="space-y-2">
-                          {(() => {
-                            const options: DropdownOption[] = mapping.dropdownOptions || [];
-                            return options.length === 0 ? (
-                              <p className="text-xs text-text-body text-center py-2">
-                                No options. Add options from CSV values or manually.
-                              </p>
-                            ) : (
-                              options.map((option, optIndex) => (
-                                <div key={optIndex} className="flex items-center gap-2 p-2 border rounded bg-white">
-                                  <Input
-                                    value={option.value}
-                                    onChange={(e) => {
-                                      const updated = [...options];
-                                      updated[optIndex] = { ...option, value: e.target.value };
-                                      updateMapping(index, { dropdownOptions: updated });
-                                    }}
-                                    placeholder="Option value"
-                                    className="flex-1 h-8"
-                                  />
-                                  <Select
-                                    value={option.color || "none"}
-                                    onValueChange={(color) => {
-                                      const updated = [...options];
-                                      updated[optIndex] = { ...option, color: color === "none" ? undefined : color };
-                                      updateMapping(index, { dropdownOptions: updated });
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-8 w-[120px]">
-                                      <SelectValue placeholder="Color">
-                                        {option.color ? (
-                                          <div className="flex items-center gap-1">
-                                            <div
-                                              className="w-3 h-3 rounded border"
-                                              style={{ backgroundColor: option.color }}
-                                            />
-                                          </div>
-                                        ) : (
-                                          "Color"
-                                        )}
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">No color</SelectItem>
-                                      <SelectItem value="#3BBF7A">Mint Green</SelectItem>
-                                      <SelectItem value="#4C85FF">Blue</SelectItem>
-                                      <SelectItem value="#FFA445">Orange</SelectItem>
-                                      <SelectItem value="#A46CFF">Purple</SelectItem>
-                                      <SelectItem value="#FF6D9D">Pink</SelectItem>
-                                      <SelectItem value="#20C4B5">Teal</SelectItem>
-                                      <SelectItem value="#FF4D4F">Red</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  {option.color && (
-                                    <Input
-                                      type="color"
-                                      value={option.color}
-                                      onChange={(e) => {
-                                        const updated = [...options];
-                                        updated[optIndex] = { ...option, color: e.target.value };
-                                        updateMapping(index, { dropdownOptions: updated });
-                                      }}
-                                      className="h-8 w-12"
-                                    />
-                                  )}
-                                </div>
-                              ))
-                            );
-                          })()}
-                        </div>
-                        <p className="text-xs text-text-body">
-                          Tip: Options will be auto-detected from CSV values. You can add colors manually.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setStep("preview")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button onClick={handleImport} disabled={isImporting}>
-                {isImporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    Start Import
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Importing Step */}
-      {step === "importing" && (
-        <Card>
-          <CardContent className="py-12">
-            {isImporting ? (
-              <div className="text-center">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary mb-4" />
-                <h3 className="text-h2 mb-2">Importing CSV</h3>
-                <p className="text-body text-text-body">
-                  Your CSV file is being processed. This may take a few minutes.
+      {/* Step Content */}
+      <div className="min-h-[500px]">
+        {/* Upload Step */}
+        {step === "upload" && (
+          <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-text-main mb-2">
+                  Upload Your CSV File
+                </h2>
+                <p className="text-text-body max-w-lg mx-auto">
+                  Import leads from a CSV or Excel file. We'll help you map columns to the right fields and validate your data.
                 </p>
               </div>
-            ) : importResult ? (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-h2 font-semibold text-text-main mb-2">Import Complete</h3>
-                  <div className="flex items-center justify-center gap-6 mt-4">
-                    <div className="text-center">
-                      <div className="text-[28px] font-semibold text-success-500">
-                        {importResult.processed}
-                      </div>
-                      <p className="text-sm text-text-body">Leads Imported</p>
-                    </div>
-                    {importResult.errors > 0 && (
-                      <div className="text-center">
-                        <div className="text-[28px] font-semibold text-danger-500">
-                          {importResult.errors}
-                        </div>
-                        <p className="text-sm text-text-body">Errors</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {importResult.errorDetails && importResult.errorDetails.length > 0 && (
-                  <div className="mt-6 space-y-2">
-                    <h4 className="text-sm font-semibold text-text-main">Error Details:</h4>
-                    <div className="max-h-[400px] overflow-y-auto space-y-2">
-                      {importResult.errorDetails.slice(0, 20).map((error, index) => (
-                        <div
-                          key={index}
-                          className="p-3 bg-danger-100/50 border border-danger-200 rounded-lg"
-                        >
-                          <p className="text-xs font-medium text-danger-700">
-                            Row {error.row}: {error.reason}
-                          </p>
-                          {error.data && (
-                            <p className="text-xs text-text-body mt-1">
-                              Data: {JSON.stringify(error.data).slice(0, 100)}...
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                      {importResult.errorDetails.length > 20 && (
-                        <p className="text-xs text-text-body text-center">
-                          ... and {importResult.errorDetails.length - 20} more errors
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+              <UploadDropzone
+                onFileAccepted={handleFileAccepted}
+                onFileRejected={handleFileRejected}
+                isUploading={isUploading}
+                uploadProgress={isUploading ? 50 : 0}
+                fileInfo={fileInfo}
+                error={uploadError}
+                onReset={handleResetUpload}
+              />
+            </CardContent>
+          </Card>
+        )}
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setStep("upload");
-                      setFile(null);
-                      setHeaders([]);
-                      setPreview([]);
-                      setMappings([]);
-                      setImportResult(null);
-                    }}
-                  >
-                    Import Another File
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      window.location.href = `/campaigns/${campaignId}/leads`;
-                    }}
-                  >
-                    View Leads
-                  </Button>
-                </div>
+        {/* Preview Step */}
+        {step === "preview" && (
+          <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <CardContent className="p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-text-main mb-2">
+                  Review Your Data
+                </h2>
+                <p className="text-text-body">
+                  We've analyzed your file. Review the column statistics and sample data below.
+                </p>
               </div>
-            ) : (
-              <div className="text-center">
-                <p className="text-body text-text-body">Processing...</p>
+
+              <DataPreviewTable
+                headers={headers}
+                data={preview}
+                totalRows={fileInfo?.rowCount}
+              />
+
+              <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    handleResetUpload();
+                    setStep("upload");
+                  }}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Upload Different File
+                </Button>
+                <Button onClick={handleProceedToMapping}>
+                  Continue to Mapping
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mapping Step */}
+        {step === "mapping" && (
+          <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <CardContent className="p-8">
+              <MappingCanvas
+                csvHeaders={headers}
+                sampleData={preview}
+                existingSchemaFields={schemaConfig}
+                mappings={mappings}
+                onMappingsChange={setMappings}
+              />
+
+              <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setStep("preview")}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Preview
+                </Button>
+                <Button 
+                  onClick={handleImport}
+                  disabled={!canImport || isImporting}
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Starting Import...
+                    </>
+                  ) : (
+                    <>
+                      Start Import
+                      <Rocket className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Import Step */}
+        {step === "importing" && (
+          <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <CardContent className="p-8">
+              <ImportProgress
+                isImporting={isImporting}
+                progress={importProgress}
+                result={importResult}
+                onImportAnother={handleImportAnother}
+                onViewLeads={handleViewLeads}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
-

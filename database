@@ -1,0 +1,1699 @@
+================================================================================
+DATABASE STRUCTURE DOCUMENTATION
+Generated: 2025-01-27
+Database Type: PostgreSQL
+ORM: Prisma
+================================================================================
+
+TABLE OF CONTENTS
+1. Enums
+2. Tables & Relationships
+3. Indexes
+4. Constraints & Rules
+5. Foreign Key Relationships
+6. Migration History
+
+================================================================================
+1. ENUMS
+================================================================================
+
+UserRole
+--------
+- ADMIN
+- MANAGER
+- BD
+- DEVELOPER
+
+CampaignWorkflowStatus (renamed from CampaignStatus)
+----------------------------------------------------
+- Draft
+- Active
+- Paused
+
+ActivityType
+------------
+- CALL
+- EMAIL
+- NOTE
+- STATUS_CHANGE
+
+ContractStatus
+--------------
+- Active
+- Inactive
+- Pending
+
+ProjectStatus
+-------------
+- Planning
+- InProgress
+- OnHold
+- Completed
+- Cancelled
+
+ConversationType
+----------------
+- DIRECT
+- GROUP
+
+LeadStatus (Legacy - kept for backward compatibility)
+-----------------------------------------------------
+- New
+- Locked
+- Contacted
+- Qualified
+- Nurture
+- Lost
+
+================================================================================
+2. TABLES & RELATIONSHIPS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ORGANIZATION                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ name            TEXT                                                        │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - users: User[]                                                           │
+│   - projects: Project[]                                                     │
+│   - conversations: Conversation[]                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ USER                                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ email           TEXT (UNIQUE)                                               │
+│ passwordHash    TEXT                                                        │
+│ role            UserRole (default: BD)                                      │
+│ avatar          TEXT?                                                       │
+│ organizationId  TEXT (FK -> Organization.id)                                │
+│ isActive        BOOLEAN (default: true)                                     │
+│ permissions     JSON?                                                       │
+│ lastLoginAt     TIMESTAMP(3)?                                               │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+│ emailSettings   JSON? (Deprecated)                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - organization: Organization                                               │
+│   - emailAccounts: EmailAccount[]                                           │
+│   - assignedLeads: Lead[] (AssignedBD)                                      │
+│   - lockedLeads: Lead[] (LockedBy)                                          │
+│   - activities: ActivityLog[]                                               │
+│   - emailThreads: EmailThread[]                                             │
+│   - sessions: Session[]                                                     │
+│   - notifications: Notification[]                                           │
+│   - tasks: Task[]                                                           │
+│   - emailTemplates: EmailTemplate[]                                         │
+│   - emailSequences: EmailSequence[]                                         │
+│   - campaignAssignments: CampaignAssignment[]                               │
+│   - accountAssignments: AccountAssignment[]                                 │
+│   - calendarIntegrations: CalendarIntegration[]                             │
+│   - bookings: Booking[]                                                     │
+│   - approvedBookings: Booking[] (BookingApprover)                           │
+│   - uploadedFiles: AccountFile[]                                            │
+│   - ownedProjects: Project[] (ProjectOwner)                                 │
+│   - projectMemberships: ProjectMember[]                                     │
+│   - createdConversations: Conversation[] (ConversationCreator)              │
+│   - conversationParticipants: ConversationParticipant[]                     │
+│   - sentMessages: Message[]                                                 │
+│   - messageReactions: MessageReaction[]                                     │
+│   - emails: Email[]                                                         │
+│   - emailLabels: EmailLabel[]                                               │
+│   - emailSyncStates: EmailSyncState[]                                       │
+│   - weeklyAssignments: WeeklyAssignment[] (AssignedUser)                    │
+│   - createdWeeklyAssignments: WeeklyAssignment[] (AssignmentCreator)        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ACCOUNT                                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ companyName     TEXT                                                        │
+│ logoUrl         TEXT?                                                       │
+│ contractStatus  ContractStatus (default: Pending)                           │
+│ guestToken      TEXT (UNIQUE, UUID)                                         │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - campaigns: Campaign[]                                                   │
+│   - interlocuteurs: Interlocuteur[]                                         │
+│   - assignedBDs: AccountAssignment[]                                        │
+│   - files: AccountFile[]                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ INTERLOCUTEUR                                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                  TEXT (PK, UUID)                                         │
+│ accountId           TEXT (FK -> Account.id, CASCADE)                        │
+│ name                TEXT                                                    │
+│ email               TEXT?                                                   │
+│ phone               TEXT?                                                   │
+│ position            TEXT?                                                   │
+│ createdAt           TIMESTAMP(3)                                            │
+│ updatedAt           TIMESTAMP(3)                                            │
+│ portalEnabled       BOOLEAN (default: false)                                │
+│ portalToken         TEXT? (UNIQUE)                                          │
+│ portalTokenExpiry   TIMESTAMP(3)?                                           │
+│ lastPortalAccess    TIMESTAMP(3)?                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - account: Account                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CAMPAIGN                                                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ accountId       TEXT (FK -> Account.id, CASCADE)                            │
+│ name            TEXT                                                        │
+│ status          CampaignWorkflowStatus (default: Draft)                     │
+│ startDate       TIMESTAMP(3)?                                               │
+│ schemaConfig    JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - account: Account                                                        │
+│   - leads: Lead[]                                                           │
+│   - tasks: Task[]                                                           │
+│   - assignedBDs: CampaignAssignment[]                                       │
+│   - statuses: LeadStatusConfig[]                                            │
+│   - meetingTypes: CampaignMeetingType[]                                     │
+│   - visitDays: CampaignVisitDay[]                                           │
+│   - weeklyAssignments: WeeklyAssignment[]                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ LEAD_STATUS_CONFIG (Dynamic Lead Status Configuration - Per-Campaign)       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ name            TEXT                                                        │
+│ color           TEXT (default: "#6B7280")                                   │
+│ order           INTEGER (default: 0)                                        │
+│ isDefault       BOOLEAN (default: false)                                    │
+│ isFinal         BOOLEAN (default: false)                                    │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (campaignId, name)                                                  │
+│ RELATIONS:                                                                   │
+│   - campaign: Campaign                                                      │
+│   - leads: Lead[]                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CAMPAIGN_MEETING_TYPE (Dynamic Meeting Types - Per-Campaign)                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ name            TEXT                                                        │
+│ icon            TEXT?                                                       │
+│ color           TEXT (default: "#3B82F6")                                   │
+│ duration        INTEGER (default: 60)                                       │
+│ isPhysical      BOOLEAN (default: false)                                    │
+│ order           INTEGER (default: 0)                                        │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (campaignId, name)                                                  │
+│ RELATIONS:                                                                   │
+│   - campaign: Campaign                                                      │
+│   - bookings: Booking[]                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CAMPAIGN_VISIT_DAY (Physical Visit Calendar)                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ date            DATE                                                        │
+│ notes           TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (campaignId, date)                                                  │
+│ RELATIONS:                                                                   │
+│   - campaign: Campaign                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ WEEKLY_ASSIGNMENT (Weekly BD Planning)                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ weekStart       DATE                                                        │
+│ notes           TEXT?                                                       │
+│ createdBy       TEXT (FK -> User.id, RESTRICT)                              │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, campaignId, weekStart)                                     │
+│ RELATIONS:                                                                   │
+│   - user: User (AssignedUser)                                               │
+│   - campaign: Campaign                                                      │
+│   - assignedBy: User (AssignmentCreator)                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ LEAD                                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ status          LeadStatus? (default: New) [LEGACY - will be removed]       │
+│ statusId        TEXT? (FK -> LeadStatusConfig.id, SET NULL)                 │
+│ assignedBdId    TEXT? (FK -> User.id)                                       │
+│ standardData    JSON                                                        │
+│ customData      JSON?                                                       │
+│ lockedAt        TIMESTAMP(3)?                                               │
+│ lockedByUserId  TEXT? (FK -> User.id)                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - campaign: Campaign                                                      │
+│   - statusConfig: LeadStatusConfig?                                         │
+│   - assignedBD: User? (AssignedBD)                                          │
+│   - lockedByUser: User? (LockedBy)                                          │
+│   - activities: ActivityLog[]                                               │
+│   - emailThreads: EmailThread[]                                             │
+│   - tasks: Task[]                                                           │
+│   - bookings: Booking[]                                                     │
+│   - emails: Email[]                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ACTIVITY_LOG                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ leadId          TEXT (FK -> Lead.id, CASCADE)                               │
+│ userId          TEXT (FK -> User.id)                                        │
+│ type            ActivityType                                                │
+│ metadata        JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - lead: Lead                                                              │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_THREAD                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ leadId          TEXT (FK -> Lead.id, CASCADE)                               │
+│ userId          TEXT (FK -> User.id)                                        │
+│ subject         TEXT                                                        │
+│ body            TEXT                                                        │
+│ fromEmail       TEXT                                                        │
+│ toEmail         TEXT                                                        │
+│ receivedAt      TIMESTAMP(3)                                                │
+│ threadId        TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - lead: Lead                                                              │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SESSION                                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ sessionToken    TEXT (UNIQUE)                                               │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ expires         TIMESTAMP(3)                                                │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ NOTIFICATION                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ type            TEXT                                                        │
+│ title           TEXT                                                        │
+│ message         TEXT                                                        │
+│ data            JSON?                                                       │
+│ isRead          BOOLEAN (default: false)                                    │
+│ priority        TEXT (default: "medium")                                    │
+│ actionUrl       TEXT?                                                       │
+│ actionLabel     TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ readAt          TIMESTAMP(3)?                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TASK                                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ leadId          TEXT? (FK -> Lead.id, CASCADE)                              │
+│ campaignId      TEXT? (FK -> Campaign.id, CASCADE)                          │
+│ projectId       TEXT? (FK -> Project.id, CASCADE)                           │
+│ title           TEXT                                                        │
+│ description     TEXT?                                                       │
+│ type            TEXT                                                        │
+│ status          TEXT (default: "pending")                                   │
+│ priority        TEXT (default: "medium")                                    │
+│ dueDate         TIMESTAMP(3)                                                │
+│ completedAt     TIMESTAMP(3)?                                               │
+│ metadata        JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - lead: Lead?                                                             │
+│   - campaign: Campaign?                                                     │
+│   - project: Project?                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_TEMPLATE                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ name            TEXT                                                        │
+│ subject         TEXT                                                        │
+│ content         TEXT                                                        │
+│ variables       JSON?                                                       │
+│ category        TEXT (default: "general")                                   │
+│ isActive        BOOLEAN (default: true)                                     │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - sequences: EmailSequenceStep[]                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_SEQUENCE                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ name            TEXT                                                        │
+│ description     TEXT?                                                       │
+│ isActive        BOOLEAN (default: true)                                     │
+│ triggerType     TEXT                                                        │
+│ triggerData     JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - steps: EmailSequenceStep[]                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_SEQUENCE_STEP                                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ sequenceId      TEXT (FK -> EmailSequence.id, CASCADE)                      │
+│ templateId      TEXT (FK -> EmailTemplate.id, CASCADE)                      │
+│ stepOrder       INTEGER                                                     │
+│ delayDays       INTEGER (default: 0)                                        │
+│ delayHours      INTEGER (default: 0)                                        │
+│ conditions      JSON?                                                       │
+│ isActive        BOOLEAN (default: true)                                     │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - sequence: EmailSequence                                                 │
+│   - template: EmailTemplate                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CAMPAIGN_ASSIGNMENT                                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ campaignId      TEXT (FK -> Campaign.id, CASCADE)                           │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ assignedAt      TIMESTAMP(3)                                                │
+│ assignedBy      TEXT?                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (campaignId, userId)                                                │
+│ RELATIONS:                                                                   │
+│   - campaign: Campaign                                                      │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ACCOUNT_ASSIGNMENT                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ accountId       TEXT (FK -> Account.id, CASCADE)                            │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ assignedAt      TIMESTAMP(3)                                                │
+│ assignedBy      TEXT?                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (accountId, userId)                                                 │
+│ RELATIONS:                                                                   │
+│   - account: Account                                                        │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CALENDAR_INTEGRATION                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ provider        TEXT                                                        │
+│ accessToken     TEXT                                                        │
+│ refreshToken    TEXT?                                                       │
+│ tokenExpiry     TIMESTAMP(3)?                                               │
+│ email           TEXT                                                        │
+│ isActive        BOOLEAN (default: true)                                     │
+│ syncEnabled     BOOLEAN (default: true)                                     │
+│ lastSyncAt      TIMESTAMP(3)?                                               │
+│ metadata        JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, provider, email)                                           │
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BOOKING (Enhanced Booking Model)                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                  TEXT (PK, UUID)                                         │
+│ userId              TEXT (FK -> User.id, CASCADE)                           │
+│ leadId              TEXT? (FK -> Lead.id, SET NULL)                         │
+│ meetingTypeId       TEXT? (FK -> CampaignMeetingType.id, SET NULL)          │
+│ title               TEXT                                                    │
+│ description         TEXT?                                                   │
+│ startTime           TIMESTAMP(3)                                            │
+│ endTime             TIMESTAMP(3)                                            │
+│ location            TEXT?                                                   │
+│ status              TEXT (default: "scheduled")                             │
+│ attendees           JSON?                                                   │
+│ reminders           JSON?                                                   │
+│ externalEventId     TEXT?                                                   │
+│ externalProvider    TEXT?                                                   │
+│ lastSyncedAt        TIMESTAMP(3)?                                           │
+│ metadata            JSON?                                                   │
+│ approvalStatus      TEXT (default: "on_hold")                               │
+│ approvedBy          TEXT? (FK -> User.id, SET NULL)                         │
+│ approvedAt          TIMESTAMP(3)?                                           │
+│ address             TEXT?                                                   │
+│ city                TEXT?                                                   │
+│ postalCode          TEXT?                                                   │
+│ latitude            FLOAT?                                                  │
+│ longitude           FLOAT?                                                  │
+│ onlineMeetingEmail  TEXT?                                                   │
+│ contactName         TEXT?                                                   │
+│ contactEmail        TEXT?                                                   │
+│ contactPhone        TEXT?                                                   │
+│ createdAt           TIMESTAMP(3)                                            │
+│ updatedAt           TIMESTAMP(3)                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - lead: Lead?                                                             │
+│   - meetingType: CampaignMeetingType?                                       │
+│   - approver: User? (BookingApprover)                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ACCOUNT_FILE                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ accountId       TEXT (FK -> Account.id, CASCADE)                            │
+│ uploadedBy      TEXT (FK -> User.id)                                        │
+│ fileName        TEXT                                                        │
+│ fileSize        INTEGER                                                     │
+│ mimeType        TEXT                                                        │
+│ fileUrl         TEXT                                                        │
+│ description     TEXT?                                                       │
+│ isPublic        BOOLEAN (default: false)                                    │
+│ category        TEXT (default: "general")                                   │
+│ metadata        JSON?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - account: Account                                                        │
+│   - uploader: User                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PROJECT                                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ name            TEXT                                                        │
+│ description     TEXT?                                                       │
+│ status          ProjectStatus (default: Planning)                           │
+│ ownerId         TEXT (FK -> User.id)                                        │
+│ organizationId  TEXT (FK -> Organization.id)                                │
+│ startDate       TIMESTAMP(3)?                                               │
+│ endDate         TIMESTAMP(3)?                                               │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - owner: User (ProjectOwner)                                              │
+│   - organization: Organization                                              │
+│   - members: ProjectMember[]                                                │
+│   - tasks: Task[]                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PROJECT_MEMBER                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ projectId       TEXT (FK -> Project.id, CASCADE)                            │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ role            TEXT (default: "member")                                    │
+│ joinedAt        TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (projectId, userId)                                                 │
+│ RELATIONS:                                                                   │
+│   - project: Project                                                        │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CONVERSATION                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ type            ConversationType (default: DIRECT)                          │
+│ name            TEXT?                                                       │
+│ organizationId  TEXT (FK -> Organization.id)                                │
+│ createdById     TEXT (FK -> User.id)                                        │
+│ pinnedMessageId TEXT?                                                       │
+│ archivedAt      TIMESTAMP(3)?                                               │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - organization: Organization                                              │
+│   - createdBy: User (ConversationCreator)                                   │
+│   - participants: ConversationParticipant[]                                 │
+│   - messages: Message[]                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CONVERSATION_PARTICIPANT                                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ conversationId  TEXT (FK -> Conversation.id, CASCADE)                       │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ joinedAt        TIMESTAMP(3)                                                │
+│ lastReadAt      TIMESTAMP(3)?                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (conversationId, userId)                                            │
+│ RELATIONS:                                                                   │
+│   - conversation: Conversation                                              │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ MESSAGE                                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ conversationId  TEXT (FK -> Conversation.id, CASCADE)                       │
+│ userId          TEXT (FK -> User.id)                                        │
+│ content         TEXT                                                        │
+│ editedAt        TIMESTAMP(3)?                                               │
+│ deletedAt       TIMESTAMP(3)?                                               │
+│ replyToId       TEXT? (FK -> Message.id)                                    │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - conversation: Conversation                                              │
+│   - user: User                                                              │
+│   - replyTo: Message? (MessageReplies)                                      │
+│   - replies: Message[] (MessageReplies)                                     │
+│   - attachments: MessageAttachment[]                                        │
+│   - reactions: MessageReaction[]                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ MESSAGE_ATTACHMENT                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ messageId       TEXT? (FK -> Message.id, CASCADE)                           │
+│ fileName        TEXT                                                        │
+│ fileUrl         TEXT                                                        │
+│ fileType        TEXT                                                        │
+│ fileSize        INTEGER                                                     │
+│ thumbnailUrl    TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - message: Message?                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ MESSAGE_REACTION                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ messageId       TEXT (FK -> Message.id, CASCADE)                            │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ emoji           TEXT                                                        │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (messageId, userId, emoji)                                          │
+│ RELATIONS:                                                                   │
+│   - message: Message                                                        │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_ACCOUNT (Email Account Configuration)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ name            TEXT                                                        │
+│ email           TEXT                                                        │
+│ provider        TEXT (default: "custom")                                    │
+│ isDefault       BOOLEAN (default: false)                                    │
+│ isActive        BOOLEAN (default: true)                                     │
+│ imapHost        TEXT                                                        │
+│ imapPort        INTEGER (default: 993)                                      │
+│ imapUser        TEXT                                                        │
+│ imapPassword    TEXT                                                        │
+│ imapSsl         BOOLEAN (default: true)                                     │
+│ smtpHost        TEXT                                                        │
+│ smtpPort        INTEGER (default: 587)                                      │
+│ smtpUser        TEXT                                                        │
+│ smtpPassword    TEXT                                                        │
+│ smtpSsl         BOOLEAN (default: false)                                    │
+│ smtpTls         BOOLEAN (default: true)                                     │
+│ syncEnabled     BOOLEAN (default: true)                                     │
+│ syncInterval    INTEGER (default: 5)                                        │
+│ lastSyncAt      TIMESTAMP(3)?                                               │
+│ lastSyncStatus  TEXT?                                                       │
+│ lastSyncError   TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, email)                                                     │
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL (New Email System - Scalable Email Infrastructure)                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                  TEXT (PK, UUID)                                         │
+│ userId              TEXT (FK -> User.id, CASCADE)                           │
+│ accountEmail        TEXT                                                    │
+│ messageId           TEXT                                                    │
+│ inReplyTo           TEXT?                                                   │
+│ references          TEXT[]                                                  │
+│ threadId            TEXT                                                    │
+│ threadPosition      INTEGER (default: 0)                                    │
+│ subject             TEXT                                                    │
+│ fromAddress         TEXT                                                    │
+│ fromName            TEXT?                                                   │
+│ toAddresses         JSON                                                    │
+│ ccAddresses         JSON?                                                   │
+│ bccAddresses        JSON?                                                   │
+│ replyToAddress      TEXT?                                                   │
+│ bodyPlain           TEXT?                                                   │
+│ bodyHtml            TEXT?                                                   │
+│ snippet             TEXT?                                                   │
+│ size                INTEGER (default: 0)                                    │
+│ hasAttachments      BOOLEAN (default: false)                                │
+│ importance          TEXT (default: "normal")                                │
+│ isRead              BOOLEAN (default: false)                                │
+│ isStarred           BOOLEAN (default: false)                                │
+│ isArchived          BOOLEAN (default: false)                                │
+│ isDraft             BOOLEAN (default: false)                                │
+│ isSent              BOOLEAN (default: false)                                │
+│ isSpam              BOOLEAN (default: false)                                │
+│ isTrash             BOOLEAN (default: false)                                │
+│ folder              TEXT (default: "INBOX")                                 │
+│ sentAt              TIMESTAMP(3)?                                           │
+│ receivedAt          TIMESTAMP(3)                                            │
+│ createdAt           TIMESTAMP(3)                                            │
+│ updatedAt           TIMESTAMP(3)                                            │
+│ imapUid             INTEGER?                                                │
+│ imapFolder          TEXT?                                                   │
+│ popMessageId        TEXT?                                                   │
+│ leadId              TEXT? (FK -> Lead.id, SET NULL)                         │
+│ rawHeaders          JSON?                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, messageId)                                                 │
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - lead: Lead?                                                             │
+│   - attachments: EmailAttachment[]                                          │
+│   - labels: EmailLabelAssignment[]                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_ATTACHMENT                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ emailId         TEXT (FK -> Email.id, CASCADE)                              │
+│ filename        TEXT                                                        │
+│ contentType     TEXT                                                        │
+│ size            INTEGER                                                     │
+│ contentId       TEXT?                                                       │
+│ storageKey      TEXT                                                        │
+│ storageUrl      TEXT?                                                       │
+│ isInline        BOOLEAN (default: false)                                    │
+│ checksum        TEXT?                                                       │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ RELATIONS:                                                                   │
+│   - email: Email                                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_LABEL                                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ name            TEXT                                                        │
+│ color           TEXT?                                                       │
+│ isSystem        BOOLEAN (default: false)                                    │
+│ displayOrder    INTEGER (default: 0)                                        │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, name)                                                      │
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+│   - assignments: EmailLabelAssignment[]                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_LABEL_ASSIGNMENT                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ emailId         TEXT (FK -> Email.id, CASCADE)                              │
+│ labelId         TEXT (FK -> EmailLabel.id, CASCADE)                         │
+│ createdAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (emailId, labelId)                                                  │
+│ RELATIONS:                                                                   │
+│   - email: Email                                                            │
+│   - label: EmailLabel                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_SYNC_STATE                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT (FK -> User.id, CASCADE)                               │
+│ folder          TEXT                                                        │
+│ uidValidity     INTEGER?                                                    │
+│ lastUid         INTEGER?                                                    │
+│ highestModSeq   BIGINT?                                                     │
+│ lastPopMessageId TEXT?                                                      │
+│ totalMessages   INTEGER (default: 0)                                        │
+│ syncedMessages  INTEGER (default: 0)                                        │
+│ lastSyncAt      TIMESTAMP(3)?                                               │
+│ lastFullSyncAt  TIMESTAMP(3)?                                               │
+│ syncStatus      TEXT (default: "idle")                                      │
+│ syncProgress    INTEGER (default: 0)                                        │
+│ errorMessage    TEXT?                                                       │
+│ errorCount      INTEGER (default: 0)                                        │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UNIQUE: (userId, folder)                                                    │
+│ RELATIONS:                                                                   │
+│   - user: User                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EMAIL_SYNC_JOB                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id              TEXT (PK, UUID)                                             │
+│ userId          TEXT                                                        │
+│ jobType         TEXT                                                        │
+│ folder          TEXT?                                                       │
+│ priority        INTEGER (default: 0)                                        │
+│ status          TEXT (default: "pending")                                   │
+│ attempts        INTEGER (default: 0)                                        │
+│ maxAttempts     INTEGER (default: 3)                                        │
+│ startedAt       TIMESTAMP(3)?                                               │
+│ completedAt     TIMESTAMP(3)?                                               │
+│ result          JSON?                                                       │
+│ error           TEXT?                                                       │
+│ scheduledFor    TIMESTAMP(3)?                                               │
+│ createdAt       TIMESTAMP(3)                                                │
+│ updatedAt       TIMESTAMP(3)                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+3. INDEXES
+================================================================================
+
+Organization
+------------
+- None (primary key only)
+
+User
+----
+- users_email_key (UNIQUE on email)
+
+Account
+-------
+- accounts_guest_token_key (UNIQUE on guestToken)
+
+Interlocuteur
+-------------
+- interlocuteurs_portal_token_key (UNIQUE on portalToken)
+
+Campaign
+--------
+- campaigns_account_id_idx (on accountId)
+- campaigns_status_idx (on status)
+
+LeadStatusConfig
+----------------
+- lead_status_configs_pkey (PRIMARY KEY)
+- lead_status_configs_campaign_id_name_key (UNIQUE on campaignId, name)
+- lead_status_configs_campaign_id_idx (on campaignId)
+- lead_status_configs_order_idx (on order)
+- lead_status_configs_campaign_default_idx (on campaignId, isDefault)
+
+CampaignMeetingType
+-------------------
+- campaign_meeting_types_pkey (PRIMARY KEY)
+- campaign_meeting_types_campaign_id_name_key (UNIQUE on campaignId, name)
+- campaign_meeting_types_campaign_id_idx (on campaignId)
+- campaign_meeting_types_order_idx (on order)
+- campaign_meeting_types_campaign_physical_idx (on campaignId, isPhysical)
+
+CampaignVisitDay
+----------------
+- campaign_visit_days_pkey (PRIMARY KEY)
+- campaign_visit_days_campaign_id_date_key (UNIQUE on campaignId, date)
+- campaign_visit_days_campaign_id_idx (on campaignId)
+- campaign_visit_days_date_idx (on date)
+- campaign_visit_days_date_range_idx (on campaignId, date)
+
+WeeklyAssignment
+----------------
+- weekly_assignments_pkey (PRIMARY KEY)
+- weekly_assignments_user_id_campaign_id_week_start_key (UNIQUE on userId, campaignId, weekStart)
+- weekly_assignments_user_id_idx (on userId)
+- weekly_assignments_campaign_id_idx (on campaignId)
+- weekly_assignments_week_start_idx (on weekStart)
+- weekly_assignments_week_user_idx (on weekStart, userId)
+
+Lead
+----
+- leads_pkey (PRIMARY KEY)
+- leads_campaign_id_idx (on campaignId)
+- leads_status_idx (on status) [LEGACY - may be dropped]
+- leads_status_id_idx (on statusId)
+- leads_locked_at_idx (on lockedAt)
+- leads_assigned_bd_id_idx (on assignedBdId)
+
+ActivityLog
+-----------
+- activity_logs_pkey (PRIMARY KEY)
+- activity_logs_lead_id_idx (on leadId)
+- activity_logs_user_id_idx (on userId)
+- activity_logs_type_idx (on type)
+- activity_logs_created_at_idx (on createdAt)
+
+EmailThread
+-----------
+- email_threads_pkey (PRIMARY KEY)
+- email_threads_lead_id_idx (on leadId)
+- email_threads_user_id_idx (on userId)
+- email_threads_thread_id_idx (on threadId)
+- email_threads_received_at_idx (on receivedAt)
+
+Session
+-------
+- sessions_pkey (PRIMARY KEY)
+- sessions_session_token_key (UNIQUE on sessionToken)
+- sessions_user_id_idx (on userId)
+- sessions_session_token_idx (on sessionToken)
+
+Notification
+------------
+- notifications_pkey (PRIMARY KEY)
+- notifications_user_id_idx (on userId)
+- notifications_is_read_idx (on isRead)
+- notifications_priority_idx (on priority)
+- notifications_created_at_idx (on createdAt)
+
+Task
+----
+- tasks_pkey (PRIMARY KEY)
+- tasks_user_id_idx (on userId)
+- tasks_lead_id_idx (on leadId)
+- tasks_campaign_id_idx (on campaignId)
+- tasks_project_id_idx (on projectId)
+- tasks_status_idx (on status)
+- tasks_priority_idx (on priority)
+- tasks_due_date_idx (on dueDate)
+
+EmailTemplate
+-------------
+- email_templates_pkey (PRIMARY KEY)
+- email_templates_user_id_idx (on userId)
+- email_templates_category_idx (on category)
+- email_templates_is_active_idx (on isActive)
+
+EmailSequence
+-------------
+- email_sequences_pkey (PRIMARY KEY)
+- email_sequences_user_id_idx (on userId)
+- email_sequences_is_active_idx (on isActive)
+- email_sequences_trigger_type_idx (on triggerType)
+
+EmailSequenceStep
+-----------------
+- email_sequence_steps_pkey (PRIMARY KEY)
+- email_sequence_steps_sequence_id_idx (on sequenceId)
+- email_sequence_steps_template_id_idx (on templateId)
+- email_sequence_steps_step_order_idx (on stepOrder)
+
+CampaignAssignment
+------------------
+- campaign_assignments_pkey (PRIMARY KEY)
+- campaign_assignments_campaign_id_user_id_key (UNIQUE on campaignId, userId)
+- campaign_assignments_campaign_id_idx (on campaignId)
+- campaign_assignments_user_id_idx (on userId)
+
+AccountAssignment
+-----------------
+- account_assignments_pkey (PRIMARY KEY)
+- account_assignments_account_id_user_id_key (UNIQUE on accountId, userId)
+- account_assignments_account_id_idx (on accountId)
+- account_assignments_user_id_idx (on userId)
+
+CalendarIntegration
+-------------------
+- calendar_integrations_pkey (PRIMARY KEY)
+- calendar_integrations_user_id_provider_email_key (UNIQUE on userId, provider, email)
+- calendar_integrations_user_id_idx (on userId)
+- calendar_integrations_provider_idx (on provider)
+- calendar_integrations_is_active_idx (on isActive)
+
+Booking
+-------
+- bookings_pkey (PRIMARY KEY)
+- bookings_user_id_idx (on userId)
+- bookings_lead_id_idx (on leadId)
+- bookings_meeting_type_id_idx (on meetingTypeId)
+- bookings_start_time_idx (on startTime)
+- bookings_end_time_idx (on endTime)
+- bookings_status_idx (on status)
+- bookings_approval_status_idx (on approvalStatus)
+- bookings_external_event_id_idx (on externalEventId)
+- bookings_postal_code_idx (on postalCode)
+- bookings_latitude_longitude_idx (on latitude, longitude)
+- bookings_lat_lng_idx (on latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+- bookings_approval_status_start_time_idx (on approvalStatus, startTime)
+- bookings_user_approval_status_idx (on userId, approvalStatus)
+
+AccountFile
+-----------
+- account_files_pkey (PRIMARY KEY)
+- account_files_account_id_idx (on accountId)
+- account_files_uploaded_by_idx (on uploadedBy)
+- account_files_is_public_idx (on isPublic)
+- account_files_category_idx (on category)
+
+Project
+-------
+- projects_pkey (PRIMARY KEY)
+- projects_owner_id_idx (on ownerId)
+- projects_organization_id_idx (on organizationId)
+- projects_status_idx (on status)
+
+ProjectMember
+-------------
+- project_members_pkey (PRIMARY KEY)
+- project_members_project_id_user_id_key (UNIQUE on projectId, userId)
+- project_members_project_id_idx (on projectId)
+- project_members_user_id_idx (on userId)
+
+Conversation
+------------
+- conversations_pkey (PRIMARY KEY)
+- conversations_organization_id_idx (on organizationId)
+- conversations_type_idx (on type)
+- conversations_archived_at_idx (on archivedAt)
+
+ConversationParticipant
+-----------------------
+- conversation_participants_pkey (PRIMARY KEY)
+- conversation_participants_conversation_id_user_id_key (UNIQUE on conversationId, userId)
+- conversation_participants_conversation_id_idx (on conversationId)
+- conversation_participants_user_id_idx (on userId)
+
+Message
+-------
+- messages_pkey (PRIMARY KEY)
+- messages_conversation_id_idx (on conversationId)
+- messages_user_id_idx (on userId)
+- messages_created_at_idx (on createdAt)
+- messages_reply_to_id_idx (on replyToId)
+
+MessageAttachment
+-----------------
+- message_attachments_pkey (PRIMARY KEY)
+- message_attachments_message_id_idx (on messageId)
+
+MessageReaction
+---------------
+- message_reactions_pkey (PRIMARY KEY)
+- message_reactions_message_id_user_id_emoji_key (UNIQUE on messageId, userId, emoji)
+- message_reactions_message_id_idx (on messageId)
+- message_reactions_user_id_idx (on userId)
+
+EmailAccount
+------------
+- email_accounts_pkey (PRIMARY KEY)
+- email_accounts_user_id_email_key (UNIQUE on userId, email)
+- email_accounts_user_id_idx (on userId)
+- email_accounts_is_active_idx (on isActive)
+
+Email
+-----
+- emails_pkey (PRIMARY KEY)
+- emails_user_id_message_id_key (UNIQUE on userId, messageId)
+- emails_user_id_thread_id_idx (on userId, threadId)
+- emails_user_id_received_at_idx (on userId, receivedAt)
+- emails_user_id_folder_idx (on userId, folder)
+- emails_user_id_is_read_idx (on userId, isRead)
+- emails_user_id_is_starred_idx (on userId, isStarred)
+- emails_user_id_imap_folder_imap_uid_idx (on userId, imapFolder, imapUid)
+- emails_lead_id_idx (on leadId)
+- emails_from_address_idx (on fromAddress)
+- emails_thread_id_idx (on threadId)
+
+EmailAttachment
+---------------
+- email_attachments_pkey (PRIMARY KEY)
+- email_attachments_email_id_idx (on emailId)
+- email_attachments_content_id_idx (on contentId)
+
+EmailLabel
+----------
+- email_labels_pkey (PRIMARY KEY)
+- email_labels_user_id_name_key (UNIQUE on userId, name)
+- email_labels_user_id_idx (on userId)
+
+EmailLabelAssignment
+--------------------
+- email_label_assignments_pkey (PRIMARY KEY)
+- email_label_assignments_email_id_label_id_key (UNIQUE on emailId, labelId)
+- email_label_assignments_email_id_idx (on emailId)
+- email_label_assignments_label_id_idx (on labelId)
+
+EmailSyncState
+--------------
+- email_sync_states_pkey (PRIMARY KEY)
+- email_sync_states_user_id_folder_key (UNIQUE on userId, folder)
+- email_sync_states_user_id_idx (on userId)
+- email_sync_states_sync_status_idx (on syncStatus)
+
+EmailSyncJob
+------------
+- email_sync_jobs_pkey (PRIMARY KEY)
+- email_sync_jobs_user_id_idx (on userId)
+- email_sync_jobs_status_idx (on status)
+- email_sync_jobs_priority_idx (on priority)
+- email_sync_jobs_scheduled_for_idx (on scheduledFor)
+
+================================================================================
+4. CONSTRAINTS & RULES
+================================================================================
+
+PRIMARY KEY CONSTRAINTS
+-----------------------
+All tables have a primary key constraint on the 'id' column (TEXT/UUID type).
+
+UNIQUE CONSTRAINTS
+------------------
+- User.email: UNIQUE
+- Account.guestToken: UNIQUE
+- Interlocuteur.portalToken: UNIQUE
+- Session.sessionToken: UNIQUE
+- LeadStatusConfig: UNIQUE(campaignId, name)
+- CampaignMeetingType: UNIQUE(campaignId, name)
+- CampaignVisitDay: UNIQUE(campaignId, date)
+- WeeklyAssignment: UNIQUE(userId, campaignId, weekStart)
+- CampaignAssignment: UNIQUE(campaignId, userId)
+- AccountAssignment: UNIQUE(accountId, userId)
+- CalendarIntegration: UNIQUE(userId, provider, email)
+- ProjectMember: UNIQUE(projectId, userId)
+- ConversationParticipant: UNIQUE(conversationId, userId)
+- MessageReaction: UNIQUE(messageId, userId, emoji)
+- EmailAccount: UNIQUE(userId, email)
+- Email: UNIQUE(userId, messageId)
+- EmailLabel: UNIQUE(userId, name)
+- EmailLabelAssignment: UNIQUE(emailId, labelId)
+- EmailSyncState: UNIQUE(userId, folder)
+
+FOREIGN KEY CONSTRAINTS & CASCADE RULES
+----------------------------------------
+1. User.organizationId -> Organization.id
+   - ON DELETE: (not specified, likely RESTRICT)
+   - ON UPDATE: (not specified, likely CASCADE)
+
+2. Interlocuteur.accountId -> Account.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+3. Campaign.accountId -> Account.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+4. LeadStatusConfig.campaignId -> Campaign.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+5. CampaignMeetingType.campaignId -> Campaign.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+6. CampaignVisitDay.campaignId -> Campaign.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+7. WeeklyAssignment.userId -> User.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+8. WeeklyAssignment.campaignId -> Campaign.id
+   - ON DELETE: CASCADE
+   - ON UPDATE: CASCADE
+
+9. WeeklyAssignment.createdBy -> User.id
+   - ON DELETE: RESTRICT
+   - ON UPDATE: CASCADE
+
+10. Lead.campaignId -> Campaign.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+11. Lead.statusId -> LeadStatusConfig.id
+    - ON DELETE: SET NULL
+    - ON UPDATE: CASCADE
+
+12. Lead.assignedBdId -> User.id
+    - ON DELETE: (not specified, likely SET NULL)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+13. Lead.lockedByUserId -> User.id
+    - ON DELETE: (not specified, likely SET NULL)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+14. ActivityLog.leadId -> Lead.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+15. ActivityLog.userId -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+16. EmailThread.leadId -> Lead.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+17. EmailThread.userId -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+18. Session.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+19. Notification.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+20. Task.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+21. Task.leadId -> Lead.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+22. Task.campaignId -> Campaign.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+23. Task.projectId -> Project.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+24. EmailTemplate.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+25. EmailSequence.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+26. EmailSequenceStep.sequenceId -> EmailSequence.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+27. EmailSequenceStep.templateId -> EmailTemplate.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+28. CampaignAssignment.campaignId -> Campaign.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+29. CampaignAssignment.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+30. AccountAssignment.accountId -> Account.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+31. AccountAssignment.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+32. CalendarIntegration.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+33. Booking.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+34. Booking.leadId -> Lead.id
+    - ON DELETE: SET NULL
+    - ON UPDATE: CASCADE
+
+35. Booking.meetingTypeId -> CampaignMeetingType.id
+    - ON DELETE: SET NULL
+    - ON UPDATE: CASCADE
+
+36. Booking.approvedBy -> User.id
+    - ON DELETE: SET NULL
+    - ON UPDATE: CASCADE
+
+37. AccountFile.accountId -> Account.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+38. AccountFile.uploadedBy -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+39. Project.ownerId -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+40. Project.organizationId -> Organization.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+41. ProjectMember.projectId -> Project.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+42. ProjectMember.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+43. Conversation.organizationId -> Organization.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+44. Conversation.createdById -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+45. ConversationParticipant.conversationId -> Conversation.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+46. ConversationParticipant.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+47. Message.conversationId -> Conversation.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+48. Message.userId -> User.id
+    - ON DELETE: (not specified, likely RESTRICT)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+49. Message.replyToId -> Message.id
+    - ON DELETE: (not specified, likely SET NULL)
+    - ON UPDATE: (not specified, likely CASCADE)
+
+50. MessageAttachment.messageId -> Message.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+51. MessageReaction.messageId -> Message.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+52. MessageReaction.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+53. EmailAccount.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+54. Email.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+55. Email.leadId -> Lead.id
+    - ON DELETE: SET NULL
+    - ON UPDATE: CASCADE
+
+56. EmailAttachment.emailId -> Email.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+57. EmailLabel.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+58. EmailLabelAssignment.emailId -> Email.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+59. EmailLabelAssignment.labelId -> EmailLabel.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+60. EmailSyncState.userId -> User.id
+    - ON DELETE: CASCADE
+    - ON UPDATE: CASCADE
+
+DEFAULT VALUES
+--------------
+- User.role: 'BD'
+- User.isActive: true
+- Campaign.status: 'Draft'
+- ContractStatus: 'Pending'
+- LeadStatusConfig.color: '#6B7280'
+- LeadStatusConfig.order: 0
+- LeadStatusConfig.isDefault: false
+- LeadStatusConfig.isFinal: false
+- CampaignMeetingType.color: '#3B82F6'
+- CampaignMeetingType.duration: 60
+- CampaignMeetingType.isPhysical: false
+- CampaignMeetingType.order: 0
+- Interlocuteur.portalEnabled: false
+- Lead.status: 'New' (legacy)
+- Notification.isRead: false
+- Notification.priority: 'medium'
+- Task.status: 'pending'
+- Task.priority: 'medium'
+- EmailTemplate.category: 'general'
+- EmailTemplate.isActive: true
+- EmailSequence.isActive: true
+- EmailSequenceStep.delayDays: 0
+- EmailSequenceStep.delayHours: 0
+- EmailSequenceStep.isActive: true
+- CalendarIntegration.isActive: true
+- CalendarIntegration.syncEnabled: true
+- Booking.status: 'scheduled'
+- Booking.approvalStatus: 'on_hold'
+- AccountFile.isPublic: false
+- AccountFile.category: 'general'
+- Project.status: 'Planning'
+- ProjectMember.role: 'member'
+- Conversation.type: 'DIRECT'
+- EmailAccount.provider: 'custom'
+- EmailAccount.isDefault: false
+- EmailAccount.isActive: true
+- EmailAccount.imapPort: 993
+- EmailAccount.imapSsl: true
+- EmailAccount.smtpPort: 587
+- EmailAccount.smtpSsl: false
+- EmailAccount.smtpTls: true
+- EmailAccount.syncEnabled: true
+- EmailAccount.syncInterval: 5
+- Email.threadPosition: 0
+- Email.size: 0
+- Email.hasAttachments: false
+- Email.importance: 'normal'
+- Email.isRead: false
+- Email.isStarred: false
+- Email.isArchived: false
+- Email.isDraft: false
+- Email.isSent: false
+- Email.isSpam: false
+- Email.isTrash: false
+- Email.folder: 'INBOX'
+- EmailAttachment.isInline: false
+- EmailLabel.isSystem: false
+- EmailLabel.displayOrder: 0
+- EmailSyncState.totalMessages: 0
+- EmailSyncState.syncedMessages: 0
+- EmailSyncState.syncStatus: 'idle'
+- EmailSyncState.syncProgress: 0
+- EmailSyncState.errorCount: 0
+- EmailSyncJob.priority: 0
+- EmailSyncJob.status: 'pending'
+- EmailSyncJob.attempts: 0
+- EmailSyncJob.maxAttempts: 3
+
+CHECK CONSTRAINTS
+-----------------
+None explicitly defined in schema (enforced via enum types and application logic).
+
+NOT NULL CONSTRAINTS
+--------------------
+Most fields are NOT NULL unless marked with '?' in the schema. Key nullable fields:
+- User.avatar
+- User.permissions
+- User.lastLoginAt
+- User.emailSettings (deprecated)
+- Account.logoUrl
+- Interlocuteur.email, phone, position, portalToken, portalTokenExpiry, lastPortalAccess
+- Campaign.startDate, schemaConfig
+- Lead.status (legacy), statusId, assignedBdId, customData, lockedAt, lockedByUserId
+- ActivityLog.metadata
+- EmailThread.threadId
+- Notification.data, actionUrl, actionLabel, readAt
+- Task.leadId, campaignId, projectId, description, completedAt, metadata
+- EmailTemplate.variables
+- EmailSequence.description, triggerData
+- EmailSequenceStep.conditions
+- CampaignAssignment.assignedBy
+- AccountAssignment.assignedBy
+- CalendarIntegration.refreshToken, tokenExpiry, lastSyncAt, metadata
+- Booking.leadId, meetingTypeId, description, location, attendees, reminders, externalEventId, externalProvider, lastSyncedAt, metadata, approvedBy, approvedAt, address, city, postalCode, latitude, longitude, onlineMeetingEmail, contactName, contactEmail, contactPhone
+- AccountFile.description, metadata
+- Project.description, startDate, endDate
+- Conversation.name, pinnedMessageId, archivedAt
+- ConversationParticipant.lastReadAt
+- Message.editedAt, deletedAt, replyToId
+- MessageAttachment.messageId, thumbnailUrl
+- EmailAccount.color
+- Email.inReplyTo, ccAddresses, bccAddresses, replyToAddress, bodyPlain, bodyHtml, snippet, imapUid, imapFolder, popMessageId, leadId, rawHeaders
+- EmailAttachment.contentId, storageUrl, checksum
+- EmailLabel.color
+- EmailSyncState.uidValidity, lastUid, highestModSeq, lastPopMessageId, lastSyncAt, lastFullSyncAt, errorMessage
+- EmailSyncJob.folder, result, error, scheduledFor, startedAt, completedAt
+
+================================================================================
+5. FOREIGN KEY RELATIONSHIPS SUMMARY
+================================================================================
+
+CASCADE DELETE RELATIONSHIPS (Child deleted when parent deleted)
+----------------------------------------------------------------
+- Organization -> User (via organizationId)
+- Account -> Interlocuteur, Campaign, AccountAssignment, AccountFile
+- Campaign -> Lead, Task, CampaignAssignment, LeadStatusConfig, CampaignMeetingType, CampaignVisitDay, WeeklyAssignment
+- User -> Session, Notification, Task, EmailTemplate, EmailSequence, CampaignAssignment, AccountAssignment, CalendarIntegration, Booking, AccountFile, ProjectMember, ConversationParticipant, MessageReaction, EmailAccount, Email, EmailLabel, EmailSyncState, WeeklyAssignment (as assigned user)
+- Lead -> ActivityLog, EmailThread, Task, Booking, Email
+- EmailSequence -> EmailSequenceStep
+- EmailTemplate -> EmailSequenceStep
+- Project -> Task, ProjectMember
+- Conversation -> ConversationParticipant, Message
+- Message -> MessageAttachment, MessageReaction, Message (replies)
+- Email -> EmailAttachment, EmailLabelAssignment
+- EmailLabel -> EmailLabelAssignment
+
+SET NULL RELATIONSHIPS (Child field set to NULL when parent deleted)
+--------------------------------------------------------------------
+- LeadStatusConfig -> Lead.statusId
+- CampaignMeetingType -> Booking.meetingTypeId
+- User -> Booking.approvedBy
+- Lead -> Booking.leadId, Email.leadId
+
+RESTRICT RELATIONSHIPS (Prevents deletion if child exists)
+----------------------------------------------------------
+- User -> WeeklyAssignment.createdBy
+
+================================================================================
+6. MIGRATION HISTORY
+================================================================================
+
+Migration: 20250101000000_booking_system_redesign
+--------------------------------------------------
+Purpose: Redesign booking system with dynamic meeting types and approval workflow
+
+Key Changes:
+1. Renamed CampaignStatus enum to CampaignWorkflowStatus
+2. Created new tables:
+   - lead_status_configs (dynamic per-campaign lead statuses)
+   - campaign_meeting_types (dynamic per-campaign meeting types)
+   - campaign_visit_days (physical visit calendar)
+   - weekly_assignments (weekly BD planning)
+3. Modified leads table:
+   - Added status_id column (FK to lead_status_configs)
+   - Migrated existing status enum values to new dynamic system
+   - Kept legacy status column for backward compatibility
+4. Modified bookings table:
+   - Added meeting_type_id (FK to campaign_meeting_types)
+   - Added approval_status (default: 'on_hold')
+   - Added approved_by (FK to users)
+   - Added approved_at timestamp
+5. Removed old tables:
+   - contact_bookings
+   - contact_availability
+   - contact_calendar_integrations
+6. Added performance indexes for common queries
+7. Created default statuses and meeting types for existing campaigns
+
+Migration: manual_add_booking_fields
+-------------------------------------
+Purpose: Add physical location and online meeting fields to bookings
+
+Key Changes:
+1. Added columns to bookings:
+   - address (TEXT)
+   - city (TEXT)
+   - postal_code (TEXT)
+   - latitude (DOUBLE PRECISION)
+   - longitude (DOUBLE PRECISION)
+   - online_meeting_email (TEXT)
+2. Added indexes:
+   - bookings_postal_code_idx
+   - bookings_meeting_type_idx
+
+================================================================================
+7. DATA INTEGRITY RULES
+================================================================================
+
+BUSINESS RULES (Enforced at Application Level)
+-----------------------------------------------
+1. Lead Status Rules:
+   - Each campaign must have at least one default status
+   - Only one status per campaign can be marked as default
+   - Final statuses (isFinal=true) represent terminal states
+
+2. Booking Rules:
+   - Bookings require approval before being confirmed (approval_status workflow)
+   - Physical meetings (isPhysical=true) require address/location data
+   - Online meetings require online_meeting_email or location field with video link
+
+3. Weekly Assignment Rules:
+   - One user can only have one assignment per campaign per week
+   - Week start must be a Monday (enforced at application level)
+
+4. Email Rules:
+   - Each user can have multiple email accounts
+   - Only one email account per user can be marked as default
+   - Email threads are grouped by threadId
+
+5. Campaign Rules:
+   - Campaigns belong to accounts
+   - Campaigns can have custom schema configurations (JSON)
+   - Campaign status workflow: Draft -> Active -> Paused
+
+6. User Rules:
+   - Users must belong to an organization
+   - User roles: ADMIN, MANAGER, BD, DEVELOPER
+   - Users can have custom permissions override (JSON)
+
+7. Project Rules:
+   - Projects belong to organizations
+   - Projects have an owner (User)
+   - Project members have roles: owner, member, viewer
+
+8. Conversation Rules:
+   - Conversations belong to organizations
+   - Direct conversations have exactly 2 participants
+   - Group conversations can have multiple participants
+
+================================================================================
+8. PERFORMANCE OPTIMIZATIONS
+================================================================================
+
+COMPOSITE INDEXES
+-----------------
+- bookings_approval_status_start_time_idx (approvalStatus, startTime)
+- bookings_user_approval_status_idx (userId, approvalStatus)
+- lead_status_configs_campaign_default_idx (campaignId, isDefault)
+- campaign_meeting_types_campaign_physical_idx (campaignId, isPhysical)
+- weekly_assignments_week_user_idx (weekStart, userId)
+- campaign_visit_days_date_range_idx (campaignId, date)
+- emails_user_id_thread_id_idx (userId, threadId)
+- emails_user_id_received_at_idx (userId, receivedAt)
+- emails_user_id_folder_idx (userId, folder)
+- emails_user_id_is_read_idx (userId, isRead)
+- emails_user_id_is_starred_idx (userId, isStarred)
+- emails_user_id_imap_folder_imap_uid_idx (userId, imapFolder, imapUid)
+
+PARTIAL INDEXES
+---------------
+- bookings_lat_lng_idx (latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+
+SPATIAL INDEXES
+---------------
+- bookings_latitude_longitude_idx (for proximity queries)
+- Note: For production, consider using PostGIS for proper spatial indexing
+
+================================================================================
+9. NOTES & OBSERVATIONS
+================================================================================
+
+LEGACY FIELDS
+-------------
+- Lead.status (enum) - Kept for backward compatibility, will be removed in future migration
+- User.emailSettings (JSON) - Deprecated, use EmailAccount instead
+
+MIGRATION STATUS
+----------------
+- Booking system redesign: COMPLETED
+- Manual booking fields: COMPLETED
+- Lead status migration: IN PROGRESS (status_id added, legacy status still present)
+
+FUTURE CONSIDERATIONS
+---------------------
+1. Consider removing Lead.status enum column after full migration to status_id
+2. Consider implementing PostGIS for advanced spatial queries on bookings
+3. EmailSyncJob table has userId but no foreign key constraint (may need to add)
+4. Consider adding soft delete support for critical entities
+5. Consider adding audit logging for sensitive operations
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+

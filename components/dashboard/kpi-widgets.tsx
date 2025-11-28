@@ -41,7 +41,7 @@ interface WidgetConfig {
 export function KPIWidgets({ overview }: KPIWidgetsProps) {
   const widgets: WidgetConfig[] = [
     {
-      title: "Total Leads",
+      title: "Leads totaux",
       value: overview.totalLeads.toLocaleString(),
       icon: Users,
       gradient: "from-blue-500/10 to-blue-500/5",

@@ -1,106 +1,87 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Megaphone, Search, TrendingUp, Users, X } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  Megaphone,
+  TrendingUp,
+  Users,
+  Filter,
+  X,
+  SlidersHorizontal,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
+import { CampaignDialog } from "@/components/campaigns/campaign-dialog";
+import {
+  CampaignCardEnhanced,
+  CampaignCardSkeleton,
+} from "@/components/campaigns/campaign-card-enhanced";
+import { FloatingCreateButton } from "@/components/campaigns/floating-action-bar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { CampaignDialog } from "@/components/campaigns/campaign-dialog";
-import { CampaignQuickViewDrawer } from "@/components/campaigns/campaign-quick-view-drawer";
-import { DeleteDialog } from "@/components/ui/delete-dialog";
-import { SelectableTable } from "@/components/ui/selectable-table";
-import { Badge } from "@/components/ui/badge";
-import { ViewToggle, type ViewMode } from "@/components/campaigns/view-toggle";
-import { CampaignFiltersDrawer } from "@/components/campaigns/campaign-filters-drawer";
-import type { CampaignFilter } from "@/components/campaigns/campaign-filters";
-import { CampaignCardView } from "@/components/campaigns/campaign-card-view";
-import { CampaignKanbanView } from "@/components/campaigns/campaign-kanban-view";
-import { CampaignKpiCard } from "@/components/campaigns/campaign-kpi-card";
-import type { Campaign } from "@/components/campaigns/types";
+import { cn } from "@/lib/utils";
+
+type Campaign = {
+  id: string;
+  name: string;
+  status: "Active" | "Paused" | "Draft" | "Completed";
+  startDate: string | null;
+  account: {
+    id: string;
+    companyName: string;
+  };
+  _count?: {
+    leads: number;
+  };
+};
+
+const STATUS_OPTIONS = [
+  { value: "Active", label: "Active", color: "bg-emerald-500" },
+  { value: "Paused", label: "En pause", color: "bg-amber-500" },
+  { value: "Draft", label: "Brouillon", color: "bg-gray-400" },
+  { value: "Completed", label: "Terminée", color: "bg-blue-500" },
+];
 
 export default function CampaignsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
+
+  // State
   const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState<ViewMode>("table");
-  const [filters, setFilters] = useState<CampaignFilter>({});
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [campaignToDelete, setCampaignToDelete] = useState<{ id: string; name: string } | null>(null);
-  const [quickViewCampaignId, setQuickViewCampaignId] = useState<string | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
-  // Load view preference from localStorage
-  useEffect(() => {
-    const savedView = localStorage.getItem("campaigns-view") as ViewMode;
-    if (savedView && ["table", "card", "kanban"].includes(savedView)) {
-      setView(savedView);
-    }
-  }, []);
-
-  // Save view preference to localStorage
-  useEffect(() => {
-    localStorage.setItem("campaigns-view", view);
-  }, [view]);
-
-  // Fetch accounts for filter dropdown
-  const { data: accounts = [] } = useQuery({
-    queryKey: ["accounts"],
+  // Fetch campaigns
+  const { data: campaigns = [], isLoading } = useQuery<Campaign[]>({
+    queryKey: ["campaigns"],
     queryFn: async () => {
-      const res = await fetch("/api/accounts");
-      if (!res.ok) throw new Error("Failed to fetch accounts");
-      return res.json();
-    },
-  });
-
-  // Build API query params
-  const queryParams = useMemo(() => {
-    const params = new URLSearchParams();
-    if (filters.status && filters.status.length > 0) {
-      params.set("status", filters.status.join(","));
-    }
-    if (filters.accountId) {
-      params.set("accountId", filters.accountId);
-    }
-    if (filters.dateRange?.start) {
-      params.set("dateFrom", filters.dateRange.start);
-    }
-    if (filters.dateRange?.end) {
-      params.set("dateTo", filters.dateRange.end);
-    }
-    if (filters.leadCountRange?.min !== undefined) {
-      params.set("leadCountMin", filters.leadCountRange.min.toString());
-    }
-    if (filters.leadCountRange?.max !== undefined) {
-      params.set("leadCountMax", filters.leadCountRange.max.toString());
-    }
-    if (filters.sortBy) {
-      params.set("sortBy", filters.sortBy);
-    }
-    if (filters.sortOrder) {
-      params.set("sortOrder", filters.sortOrder);
-    }
-    return params.toString();
-  }, [filters]);
-
-  const { data: campaigns = [], isLoading, refetch } = useQuery<Campaign[]>({
-    queryKey: ["campaigns", queryParams],
-    queryFn: async () => {
-      const res = await fetch(`/api/campaigns?${queryParams}`);
+      const res = await fetch("/api/campaigns");
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       return res.json();
     },
   });
 
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
@@ -124,6 +105,39 @@ export default function CampaignsPage() {
     },
   });
 
+  // Filter campaigns
+  const filteredCampaigns = useMemo(() => {
+    let result = campaigns;
+
+    // Status filter
+    if (statusFilter.length > 0) {
+      result = result.filter((c) => statusFilter.includes(c.status));
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.account?.companyName?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [campaigns, statusFilter, searchQuery]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = campaigns.length;
+    const active = campaigns.filter((c) => c.status === "Active").length;
+    const totalLeads = campaigns.reduce((sum, c) => sum + (c._count?.leads || 0), 0);
+    const avgLeads = total > 0 ? Math.round(totalLeads / total) : 0;
+
+    return { total, active, totalLeads, avgLeads };
+  }, [campaigns]);
+
+  // Handlers
   const handleEdit = (campaignId: string) => {
     setEditingCampaignId(campaignId);
     setCampaignDialogOpen(true);
@@ -134,336 +148,233 @@ export default function CampaignsPage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleCampaignClick = (campaignId: string) => {
+    router.push(`/campaigns/${campaignId}`);
+  };
+
   const handleNewCampaign = () => {
     setEditingCampaignId(undefined);
     setCampaignDialogOpen(true);
   };
 
-  const handleCampaignClick = (campaignId: string) => {
-    setQuickViewCampaignId(campaignId);
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilter((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
   };
 
-  // Filter by search query (client-side)
-  const filteredCampaigns = useMemo(() => {
-    let result = campaigns;
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (campaign) =>
-          campaign.name.toLowerCase().includes(query) ||
-          campaign.account?.companyName.toLowerCase().includes(query)
-      );
-    }
-    
-    return result;
-  }, [campaigns, searchQuery]);
-
-  // Calculate stats with trends
-  const stats = useMemo(() => {
-    const totalCampaigns = campaigns.length;
-    const activeCampaigns = campaigns.filter((c) => c.status === "Active").length;
-    const totalLeads = campaigns.reduce((sum, c) => sum + (c._count?.leads || 0), 0);
-    
-    // Calculate trends (simplified - in production would compare with previous period)
-    const previousActive = Math.floor(activeCampaigns * 0.9); // Mock previous value
-    const activeTrend = previousActive > 0 
-      ? ((activeCampaigns - previousActive) / previousActive) * 100 
-      : activeCampaigns > 0 ? 100 : 0;
-
-    const previousLeads = Math.floor(totalLeads * 0.85); // Mock previous value
-    const leadsTrend = previousLeads > 0
-      ? ((totalLeads - previousLeads) / previousLeads) * 100
-      : totalLeads > 0 ? 100 : 0;
-
-    return { 
-      totalCampaigns, 
-      activeCampaigns, 
-      totalLeads,
-      activeTrend,
-      leadsTrend,
-    };
-  }, [campaigns]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-success-100 text-success-text";
-      case "Paused":
-        return "bg-warning-100 text-warning-500";
-      case "Draft":
-        return "bg-muted text-muted-foreground";
-      case "Completed":
-        return "bg-info-100 text-info-500";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
+  const clearFilters = () => {
+    setStatusFilter([]);
+    setSearchQuery("");
   };
+
+  const hasActiveFilters = statusFilter.length > 0 || searchQuery.length > 0;
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-[28px] font-semibold text-text-main tracking-[-0.5px]">Campagnes</h1>
-          <p className="text-body text-text-body mt-2">
-            Gérez les campagnes commerciales
-          </p>
-        </div>
-        <Button onClick={handleNewCampaign}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle campagne
-        </Button>
-      </div>
-
-      {/* Enhanced KPI Cards with Trends */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <CampaignKpiCard
-          title="Total des campagnes"
-          value={stats.totalCampaigns}
-          icon={Megaphone}
-          colorClass="text-primary-500"
-          iconBgColor="bg-gradient-to-br from-primary-100 to-primary-50"
-        />
-        <CampaignKpiCard
-          title="Campagnes actives"
-          value={stats.activeCampaigns}
-          icon={TrendingUp}
-          trend={stats.activeTrend}
-          subtitle={`${stats.activeCampaigns > 0 ? '+' : ''}${stats.activeTrend.toFixed(1)}% vs période précédente`}
-          colorClass="text-success-text"
-          iconBgColor="bg-gradient-to-br from-success-100 to-[#D1FAE5]"
-        />
-        <CampaignKpiCard
-          title="Total des leads"
-          value={stats.totalLeads}
-          icon={Users}
-          trend={stats.leadsTrend}
-          subtitle={`${stats.leadsTrend > 0 ? '+' : ''}${stats.leadsTrend.toFixed(1)}% vs période précédente`}
-          colorClass="text-info-500"
-          iconBgColor="bg-gradient-to-br from-info-light to-[#DBEAFE]"
-        />
-      </div>
-
-      {/* Search, Filters, and View Toggle */}
-      <div className="mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex-1 w-full sm:max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-body" />
-            <Input
-              placeholder="Rechercher des campagnes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
+      {/* Header Section */}
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          {/* Title Row */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Campagnes</h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Gérez vos campagnes commerciales et suivez leurs performances
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <CampaignFiltersDrawer
-              filters={filters}
-              onFiltersChange={setFilters}
-              accounts={accounts}
-            />
-            <ViewToggle
-              view={view}
-              onViewChange={setView}
-              availableViews={["table", "card", "kanban"]}
-            />
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {[
+              {
+                label: "Total Campagnes",
+                value: stats.total,
+                icon: Megaphone,
+                color: "text-primary-500",
+                bg: "bg-primary-50",
+              },
+              {
+                label: "Actives",
+                value: stats.active,
+                icon: TrendingUp,
+                color: "text-emerald-600",
+                bg: "bg-emerald-50",
+              },
+              {
+                label: "Total Leads",
+                value: stats.totalLeads,
+                icon: Users,
+                color: "text-blue-600",
+                bg: "bg-blue-50",
+              },
+              {
+                label: "Moy. par Campagne",
+                value: stats.avgLeads,
+                icon: CheckCircle2,
+                color: "text-violet-600",
+                bg: "bg-violet-50",
+              },
+            ].map((stat, index) => (
+              <div
+                key={stat.label}
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-white",
+                  "transition-all duration-300 hover:shadow-md hover:border-gray-200",
+                  "animate-in fade-in slide-in-from-bottom-2"
+                )}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className={cn("p-2.5 rounded-xl", stat.bg)}>
+                  <stat.icon className={cn("h-5 w-5", stat.color)} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          {/* Active Filter Badges */}
-          {(filters.status && filters.status.length > 0) || filters.accountId ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              {filters.status && filters.status.length > 0 && (
-                <>
-                  {filters.status.map((status) => (
-                    <Badge
-                      key={status}
-                      variant="secondary"
-                      className="gap-1"
-                    >
-                      {status}
-                      <button
-                        onClick={() => {
-                          const newStatus = filters.status?.filter((s) => s !== status);
-                          setFilters({
-                            ...filters,
-                            status: newStatus && newStatus.length > 0 ? newStatus : undefined,
-                          });
-                        }}
-                        className="ml-1 hover:bg-transparent"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </>
-              )}
-              {filters.accountId && accounts.find((a) => a.id === filters.accountId) && (
-                <Badge variant="secondary" className="gap-1">
-                  {accounts.find((a) => a.id === filters.accountId)?.companyName}
-                  <button
-                    onClick={() => setFilters({ ...filters, accountId: undefined })}
-                    className="ml-1 hover:bg-transparent"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
+
+          {/* Search & Filter Row */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher des campagnes ou comptes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 rounded-xl border-gray-200 bg-white focus:ring-2 focus:ring-primary-500/20"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100"
+                >
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                </button>
               )}
             </div>
-          ) : null}
+
+            {/* Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-10 rounded-xl gap-2 transition-all duration-150",
+                    statusFilter.length > 0 && "border-primary-300 bg-primary-50 shadow-sm shadow-primary-100"
+                  )}
+                >
+                  <Filter className="h-4 w-4" />
+                  Statut
+                  {statusFilter.length > 0 && (
+                    <Badge className="h-5 px-1.5 text-xs bg-primary-500 animate-in zoom-in-75 duration-150">
+                      {statusFilter.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52">
+                {STATUS_OPTIONS.map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status.value}
+                    checked={statusFilter.includes(status.value)}
+                    onCheckedChange={() => toggleStatusFilter(status.value)}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={cn("w-2 h-2 rounded-full", status.color)} />
+                      {status.label}
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                ))}
+                {statusFilter.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setStatusFilter([])}>
+                      <X className="h-4 w-4 opacity-60" />
+                      Effacer la sélection
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Clear all filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-10 text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-4 w-4 mr-1.5" />
+                Effacer les filtres
+              </Button>
+            )}
+
+            {/* Results count */}
+            <div className="ml-auto text-sm text-gray-500">
+              {filteredCampaigns.length} campagne{filteredCampaigns.length !== 1 ? "s" : ""}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Campaign Views */}
-      {isLoading ? (
-        <div className="text-center py-12 text-text-body">Chargement...</div>
-      ) : filteredCampaigns.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Megaphone className="mx-auto h-12 w-12 text-text-body mb-4 opacity-50" />
-            <p className="text-body text-text-body">
-              {searchQuery || Object.keys(filters).length > 0
-                ? "Aucune campagne trouvée correspondant à vos filtres"
-                : "Aucune campagne pour le moment"}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {isLoading ? (
+          // Loading skeleton grid
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(6)].map((_, i) => (
+              <CampaignCardSkeleton key={i} index={i} />
+            ))}
+          </div>
+        ) : filteredCampaigns.length === 0 ? (
+          // Empty state
+          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
+            <div className="h-20 w-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-6">
+              <Megaphone className="h-10 w-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {hasActiveFilters ? "Aucune campagne ne correspond à vos filtres" : "Aucune campagne pour le moment"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+              {hasActiveFilters
+                ? "Essayez d'ajuster vos critères de recherche ou de filtre."
+                : "Créez votre première campagne pour commencer à suivre vos leads et conversions."}
             </p>
-            {!searchQuery && Object.keys(filters).length === 0 && (
-              <Button onClick={handleNewCampaign} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                Créer votre première campagne
+            {hasActiveFilters ? (
+              <Button variant="outline" onClick={clearFilters}>
+                Effacer tous les filtres
               </Button>
+            ) : (
+              <Button onClick={handleNewCampaign}>Créer votre première campagne</Button>
             )}
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {view === "table" && (
-            <SelectableTable
-              data={filteredCampaigns}
-              entity="campaigns"
-              getItemId={(campaign) => campaign.id}
-              onRefresh={() => refetch()}
-              isLoading={isLoading}
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Nom de la campagne',
-                  render: (campaign) => (
-                    <div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleCampaignClick(campaign.id);
-                        }}
-                        className="font-medium text-text-main hover:text-primary-500 transition-colors text-left"
-                      >
-                        {campaign.name}
-                      </button>
-                      <p className="text-sm text-text-body">
-                        {campaign.account?.companyName || "Aucun compte"}
-                      </p>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'status',
-                  label: 'Statut',
-                  render: (campaign) => (
-                    <Badge 
-                      variant="outline" 
-                      className={`${getStatusColor(campaign.status)}`}
-                    >
-                      {campaign.status}
-                    </Badge>
-                  ),
-                },
-                {
-                  key: 'leads',
-                  label: 'Leads',
-                  render: (campaign) => (
-                    <span className="font-medium">{campaign._count?.leads || 0}</span>
-                  ),
-                },
-                {
-                  key: 'startDate',
-                  label: 'Date de début',
-                  render: (campaign) => (
-                    campaign.startDate 
-                      ? new Date(campaign.startDate).toLocaleDateString('fr-FR')
-                      : '-'
-                  ),
-                },
-                {
-                  key: 'actions',
-                  label: 'Actions',
-                  render: (campaign) => (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <span className="sr-only">More</span>
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                            />
-                          </svg>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/campaigns/${campaign.id}`}>Voir les détails</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(campaign.id)}>
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/campaigns/${campaign.id}/leads`}>Voir les leads</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/campaigns/${campaign.id}/import`}>Importer CSV</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(campaign)}
-                          className="text-destructive"
-                        >
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ),
-                },
-              ]}
-            />
-          )}
+          </div>
+        ) : (
+          // Campaign cards grid
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredCampaigns.map((campaign, index) => (
+              <CampaignCardEnhanced
+                key={campaign.id}
+                campaign={campaign}
+                index={index}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onClick={handleCampaignClick}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-          {view === "card" && (
-            <CampaignCardView
-              campaigns={filteredCampaigns}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleCampaignClick}
-            />
-          )}
+      {/* Floating Create Button */}
+      <FloatingCreateButton onClick={handleNewCampaign} label="Nouvelle Campagne" />
 
-          {view === "kanban" && (
-            <CampaignKanbanView
-              campaigns={filteredCampaigns}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleCampaignClick}
-            />
-          )}
-        </>
-      )}
-
+      {/* Dialogs */}
       <CampaignDialog
         open={campaignDialogOpen}
         onOpenChange={(open) => {
@@ -482,15 +393,6 @@ export default function CampaignsPage() {
         title="Supprimer la campagne"
         description="Êtes-vous sûr de vouloir supprimer"
         itemName={campaignToDelete?.name}
-      />
-
-      <CampaignQuickViewDrawer
-        open={!!quickViewCampaignId}
-        onOpenChange={(open) => {
-          if (!open) setQuickViewCampaignId(null);
-        }}
-        campaignId={quickViewCampaignId}
-        onEdit={handleEdit}
       />
     </div>
   );

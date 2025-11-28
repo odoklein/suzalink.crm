@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
-import { streamCSVRows, CSVRow } from "./csv-parser-blob";
-import { deleteFile } from "./storage";
+import { streamCSVRows, CSVRow } from "./csv-parser";
+import { unlink } from "fs/promises";
 import { parseFieldValue, validateFieldValue } from "./field-type-parser";
 import { SchemaField, DropdownOption } from "@/components/campaigns/schema-config-editor";
 
@@ -228,9 +228,9 @@ export async function processCSVImport(data: CSVImportData): Promise<{
       }
     });
 
-    // Clean up file (works for both local filesystem and Vercel Blob)
+    // Clean up file
     try {
-      await deleteFile(filePath);
+      await unlink(filePath);
     } catch (error) {
       console.error("Error deleting file:", error);
     }

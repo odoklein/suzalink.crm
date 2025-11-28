@@ -157,7 +157,7 @@ export function DashboardContent() {
               className="h-16 text-base font-medium justify-start gap-4 transition-all duration-150 hover:scale-[1.01] hover:shadow-md" 
               asChild
             >
-              <a href="/leads/workspace">
+              <a href="/campaigns">
                 <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
                   <Users className="h-5 w-5" />
                 </div>
@@ -193,7 +193,7 @@ export function DashboardContent() {
               className="h-16 text-base font-medium justify-start gap-4 transition-all duration-150 hover:scale-[1.01] hover:shadow-sm hover:border-primary-200 hover:bg-primary-50/30" 
               asChild
             >
-              <a href="/leads/workspace">
+              <a href="/campaigns">
                 <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <Users className="h-5 w-5 text-green-600" />
                 </div>

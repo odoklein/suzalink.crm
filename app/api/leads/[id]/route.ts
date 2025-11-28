@@ -22,6 +22,7 @@ export async function GET(
             account: true,
           },
         },
+        statusConfig: true, // Include dynamic status
         assignedBD: {
           select: {
             id: true,
@@ -90,7 +91,11 @@ export async function PUT(
     // First, fetch the lead to check campaign access
     const existingLead = await prisma.lead.findUnique({
       where: { id },
-      select: { campaignId: true },
+      select: { 
+        campaignId: true,
+        statusId: true,
+        status: true,
+      },
     });
 
     if (!existingLead) {
@@ -117,10 +122,28 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { status, standardData, customData, assignedBdId } = body;
+    const { status, statusId, standardData, customData, assignedBdId } = body;
 
     const updateData: any = {};
-    if (status) updateData.status = status;
+    
+    // Handle status update - check if it's a UUID (new dynamic status) or enum value (legacy)
+    if (status) {
+      // Check if status is a UUID (new dynamic status ID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(status)) {
+        // It's a dynamic status ID
+        updateData.statusId = status;
+      } else {
+        // It's a legacy enum status - keep for backward compatibility
+        updateData.status = status;
+      }
+    }
+    
+    // Explicit statusId takes precedence
+    if (statusId) {
+      updateData.statusId = statusId;
+    }
+    
     if (standardData) updateData.standardData = standardData;
     if (customData !== undefined) updateData.customData = customData;
     if (assignedBdId !== undefined) updateData.assignedBdId = assignedBdId;
@@ -128,18 +151,46 @@ export async function PUT(
     const lead = await prisma.lead.update({
       where: { id },
       data: updateData,
+      include: {
+        statusConfig: true,
+      },
     });
 
     // Log status change if status was updated
-    if (status) {
+    if (status || statusId) {
+      const oldStatusId = existingLead.statusId;
+      const newStatusId = updateData.statusId || null;
+      
+      // Fetch status names for logging
+      let oldStatusName = existingLead.status;
+      let newStatusName = status;
+      
+      if (oldStatusId) {
+        const oldStatus = await prisma.leadStatusConfig.findUnique({
+          where: { id: oldStatusId },
+          select: { name: true },
+        });
+        oldStatusName = oldStatus?.name || oldStatusName;
+      }
+      
+      if (newStatusId) {
+        const newStatus = await prisma.leadStatusConfig.findUnique({
+          where: { id: newStatusId },
+          select: { name: true },
+        });
+        newStatusName = newStatus?.name || newStatusName;
+      }
+
       await prisma.activityLog.create({
         data: {
           leadId: id,
           userId: session.user.id,
           type: "STATUS_CHANGE",
           metadata: {
-            oldStatus: lead.status,
-            newStatus: status,
+            oldStatus: oldStatusName,
+            newStatus: newStatusName,
+            oldStatusId,
+            newStatusId,
           },
         },
       });
@@ -154,4 +205,3 @@ export async function PUT(
     );
   }
 }
-

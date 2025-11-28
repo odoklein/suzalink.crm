@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
-import { CampaignAssignmentDialog } from "@/components/assignments/campaign-assignment-dialog";
+// This component is now deprecated in favor of CampaignSettingsDrawer
+// Keeping it for backwards compatibility but redirecting to open the drawer
+
+import { useSession } from "next-auth/react";
 
 type Campaign = {
   id: string;
@@ -36,138 +35,25 @@ type CampaignSettingsProps = {
 };
 
 export function CampaignSettings({ campaign, assignments }: CampaignSettingsProps) {
-  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
-  const schemaConfig = campaign.schemaConfig || [];
+  const { data: session } = useSession();
+  const canConfigure = session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER";
 
+  if (!canConfigure) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Vous n'avez pas accès à cette section</p>
+      </div>
+    );
+  }
+
+  // The settings are now shown in a drawer, triggered from the tab click
+  // This component just displays a placeholder message
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {/* Campaign Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-text-main">Campaign Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-text-body">Campaign Name</label>
-            <p className="text-body text-text-main">{campaign.name}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-text-body">Account</label>
-            <p className="text-body text-text-main">{campaign.account.companyName}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-text-body">Status</label>
-            <p className="text-body capitalize text-text-main">{campaign.status}</p>
-          </div>
-          {campaign.startDate && (
-            <div>
-              <label className="text-sm font-medium text-text-body">Start Date</label>
-              <p className="text-body text-text-main">
-                {new Date(campaign.startDate).toLocaleDateString()}
-              </p>
-            </div>
-          )}
-          <div>
-            <label className="text-sm font-medium text-text-body">Total Leads</label>
-            <p className="text-body text-text-main">{campaign._count.leads}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Custom Fields Schema */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-text-main">Custom Fields Schema</CardTitle>
-          <CardDescription className="text-text-body">
-            {schemaConfig.length} custom field{schemaConfig.length !== 1 ? "s" : ""} defined
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {schemaConfig.length === 0 ? (
-            <p className="text-body text-text-body">No custom fields defined</p>
-          ) : (
-            <div className="space-y-2">
-              {schemaConfig.map((field: any, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-lg border border-border p-3"
-                >
-                  <div>
-                    <p className="font-medium text-text-main">{field.label}</p>
-                    <p className="text-sm text-text-body">
-                      {field.key} • {field.type}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Assigned BDs Management */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-text-main">Assigned BDs</CardTitle>
-              <CardDescription className="text-text-body">
-                {assignments.length} BD{assignments.length !== 1 ? "s" : ""} assigned
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAssignmentDialogOpen(true)}
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Manage
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {assignments.length === 0 ? (
-            <p className="text-body text-text-body">No BDs assigned yet</p>
-          ) : (
-            <div className="space-y-2">
-              {assignments.map((assignment: Assignment) => (
-                <div
-                  key={assignment.user.id}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  {assignment.user.avatar ? (
-                    <img
-                      src={assignment.user.avatar}
-                      alt={assignment.user.email}
-                      className="h-8 w-8 rounded-full"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-500">
-                      <Users className="h-4 w-4" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium text-text-main">{assignment.user.email}</p>
-                    <p className="text-xs text-text-body">
-                      Assigned {new Date(assignment.assignedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <CampaignAssignmentDialog
-        campaignId={campaign.id}
-        open={assignmentDialogOpen}
-        onOpenChange={setAssignmentDialogOpen}
-      />
+    <div className="flex items-center justify-center h-64 text-center">
+      <div>
+        <p className="text-muted-foreground">Les paramètres s'ouvrent dans un panneau latéral.</p>
+        <p className="text-sm text-muted-foreground/70 mt-1">Cliquez sur l'onglet Settings pour l'ouvrir.</p>
+      </div>
     </div>
   );
 }
-
-
-
-

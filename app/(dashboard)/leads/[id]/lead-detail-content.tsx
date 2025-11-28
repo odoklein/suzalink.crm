@@ -24,6 +24,7 @@ import { ClickToDial } from "@/components/aircall/click-to-dial";
 import { ScheduleMeetingDialog } from "@/components/bookings/schedule-meeting-dialog";
 import { LeadActivityTimelineDrawer } from "@/components/leads/lead-activity-timeline-drawer";
 import { LeadQuickActionsDrawer } from "@/components/leads/lead-quick-actions-drawer";
+import { QuickBookingCard } from "@/components/bookings/quick-booking-card";
 import { PanelRight, Activity } from "lucide-react";
 
 type Lead = {
@@ -321,6 +322,18 @@ export function LeadDetailContent({ leadId, initialLead }: LeadDetailContentProp
 
         <div className="space-y-6">
           <LeadScoringCard leadId={leadId} />
+
+          <QuickBookingCard
+            leadId={leadId}
+            leadData={{
+              name: `${standardData.firstName} ${standardData.lastName}`,
+              email: standardData.email,
+              phone: standardData.phone,
+              address: standardData.address,
+              postalCode: standardData.postalCode,
+              city: standardData.city,
+            }}
+          />
 
           <Card className="border-0 shadow-md">
             <CardHeader className="border-b border-border/50">

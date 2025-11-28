@@ -240,10 +240,30 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "zoom-in-98": {
+          from: { opacity: "0", transform: "scale(0.98)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "zoom-out-98": {
+          from: { opacity: "1", transform: "scale(1)" },
+          to: { opacity: "0", transform: "scale(0.98)" },
+        },
+        "slide-up-fade": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-down-fade": {
+          from: { opacity: "1", transform: "translateY(0)" },
+          to: { opacity: "0", transform: "translateY(4px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "zoom-in-98": "zoom-in-98 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+        "zoom-out-98": "zoom-out-98 0.1s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-up-fade": "slide-up-fade 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-down-fade": "slide-down-fade 0.1s cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },

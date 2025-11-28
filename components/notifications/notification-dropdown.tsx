@@ -30,7 +30,15 @@ interface NotificationResponse {
   total: number;
 }
 
-type FilterType = 'All' | 'Leads' | 'Tasks' | 'Emails' | 'System';
+type FilterType = 'All' | 'Lead' | 'Task' | 'Email' | 'System';
+
+const filterLabels: Record<FilterType, string> = {
+  All: 'Tout',
+  Lead: 'Leads',
+  Task: 'Tâches',
+  Email: 'Emails',
+  System: 'Système',
+};
 
 // Enhanced icon mapping with proper Lucide icons and colors
 const getNotificationIconConfig = (type: Notification['type']) => {
@@ -76,9 +84,9 @@ const filterNotifications = (notifications: Notification[], filter: FilterType):
   
   const typeMap: Record<FilterType, Notification['type'][]> = {
     All: [],
-    Leads: ['lead_assigned', 'lead_qualified'],
-    Tasks: ['task_due'],
-    Emails: ['email_opened', 'sequence_completed'],
+    Lead: ['lead_assigned', 'lead_qualified'],
+    Task: ['task_due'],
+    Email: ['email_opened', 'sequence_completed'],
     System: ['system', 'call_missed']
   };
   
@@ -185,9 +193,9 @@ export function NotificationDropdown() {
   // Group filtered notifications by date
   const groupedNotifications = groupNotificationsByDate(filteredNotifications);
   
-  // Sort date groups: Today, Yesterday, then specific dates, then Earlier
+  // Sort date groups: Aujourd'hui, Hier, then specific dates, then Plus ancien
   const sortedDateGroups = Object.keys(groupedNotifications).sort((a, b) => {
-    const order: Record<string, number> = { 'Today': 0, 'Yesterday': 1, 'Earlier': 999 };
+    const order: Record<string, number> = { "Aujourd'hui": 0, 'Hier': 1, 'Plus ancien': 999 };
     if (order[a] !== undefined && order[b] !== undefined) {
       return order[a] - order[b];
     }
@@ -228,7 +236,7 @@ export function NotificationDropdown() {
     };
   }, [isOpen]);
 
-  const filterTabs: FilterType[] = ['All', 'Leads', 'Tasks', 'Emails', 'System'];
+  const filterTabs: FilterType[] = ['All', 'Lead', 'Task', 'Email', 'System'];
 
   return (
     <>
@@ -292,7 +300,7 @@ export function NotificationDropdown() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {filter}
+              {filterLabels[filter]}
             </button>
           ))}
         </div>
@@ -308,10 +316,10 @@ export function NotificationDropdown() {
               {markAllReadMutation.isPending ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Marking...
+                  Marquage...
                 </span>
               ) : (
-                'Mark as all read'
+                'Tout marquer comme lu'
               )}
             </button>
           </div>
@@ -326,7 +334,7 @@ export function NotificationDropdown() {
           ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-sm text-gray-500">No notifications</p>
+              <p className="text-sm text-gray-500">Aucune notification</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -408,7 +416,7 @@ export function NotificationDropdown() {
                 className="h-10 rounded-lg text-sm font-semibold bg-[#1A6BFF] hover:bg-[#0F4FCC] text-white"
                 onClick={() => setIsOpen(false)}
               >
-                View All Notifications
+                Voir toutes les notifications
               </Button>
             </Link>
           </div>

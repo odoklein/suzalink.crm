@@ -42,6 +42,7 @@ export function ProjectMembers({ projectId }: ProjectMembersProps) {
       if (!res.ok) throw new Error("Failed to fetch project");
       return res.json();
     },
+    staleTime: 30000,
   });
 
   const { data: usersData } = useQuery({
@@ -51,6 +52,7 @@ export function ProjectMembers({ projectId }: ProjectMembersProps) {
       if (!res.ok) throw new Error("Failed to fetch users");
       return res.json();
     },
+    staleTime: 60000, // Users change less frequently
   });
 
   const users = usersData?.users || [];

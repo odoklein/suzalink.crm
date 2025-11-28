@@ -313,7 +313,7 @@ export async function getLeads(params?: {
   if (params?.campaignId) {
     where.campaignId = params.campaignId;
     
-    // For BD users, verify they have access to this campaign
+    // For BD users, verify they have access to this campaign and filter by assignment
     if (session.user.role === "BD") {
       const assignment = await prisma.campaignAssignment.findUnique({
         where: {
@@ -327,22 +327,14 @@ export async function getLeads(params?: {
       if (!assignment) {
         return { leads: [], pagination: { page, limit, total: 0, totalPages: 0 } };
       }
+
+      // BD users only see leads assigned to them
+      where.assignedBdId = session.user.id;
     }
   } else {
-    // If no campaignId specified, for BD users, only show leads from their assigned campaigns
+    // If no campaignId specified, for BD users, only show leads assigned to them
     if (session.user.role === "BD") {
-      const assignedCampaigns = await prisma.campaignAssignment.findMany({
-        where: { userId: session.user.id },
-        select: { campaignId: true },
-      });
-      
-      const assignedCampaignIds = assignedCampaigns.map((a) => a.campaignId);
-      
-      if (assignedCampaignIds.length === 0) {
-        return { leads: [], pagination: { page, limit, total: 0, totalPages: 0 } };
-      }
-      
-      where.campaignId = { in: assignedCampaignIds };
+      where.assignedBdId = session.user.id;
     }
   }
   

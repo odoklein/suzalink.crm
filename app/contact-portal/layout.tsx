@@ -38,19 +38,14 @@ const NAV_ITEMS = [
     icon: LayoutDashboard,
   },
   {
-    href: "/contact-portal/calendar",
-    label: "Mon calendrier",
-    icon: Calendar,
-  },
-  {
-    href: "/contact-portal/availability",
-    label: "Disponibilités",
-    icon: Clock,
-  },
-  {
     href: "/contact-portal/bookings",
     label: "Rendez-vous",
     icon: CalendarCheck,
+  },
+  {
+    href: "/contact-portal/calendar",
+    label: "Calendrier",
+    icon: Calendar,
   },
 ];
 
@@ -226,6 +221,11 @@ export default function ContactPortalLayout({
     </div>
   );
 }
+
+
+
+
+
 
 
 

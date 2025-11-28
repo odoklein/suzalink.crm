@@ -1,3 +1,10 @@
+### Geocoding (Mapbox)
+- `MAPBOX_API_KEY` - Mapbox access token for address geocoding
+  - Get from: https://account.mapbox.com/
+  - Required for the Appointments Organizer geocoding workflow
+  - Example `.env.local` entry:
+    - `MAPBOX_API_KEY="pk.ey..."`
+
 # Environment Variables Reference
 
 This document lists all environment variables used in the Suzalink CRM application.
