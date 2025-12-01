@@ -180,7 +180,7 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
       
       setHeaders(data.headers);
       setPreview(data.preview);
-      setFilePath(data.filePath);
+      setFilePath(data.blobUrl);
       setFileInfo({
         name: uploadedFile.name,
         size: uploadedFile.size,
@@ -280,7 +280,7 @@ export function CSVUploadWizard({ campaignId }: { campaignId: string }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          filePath,
+          blobUrl: filePath,
           mappings: mappingsObj,
           schemaConfig: newSchemaFields,
         }),

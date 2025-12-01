@@ -1,12 +1,20 @@
 import { prisma } from "./prisma";
-import { streamCSVRows, CSVRow } from "./csv-parser";
+import { streamCSVRows, streamCSVRowsFromStream, CSVRow } from "./csv-parser";
 import { unlink } from "fs/promises";
+import { Readable } from "stream";
 import { parseFieldValue, validateFieldValue } from "./field-type-parser";
 import { SchemaField, DropdownOption } from "@/components/campaigns/schema-config-editor";
 
 export interface CSVImportData {
   campaignId: string;
   filePath: string;
+  mappings: Record<string, string>;
+  schemaConfig: SchemaField[];
+}
+
+export interface CSVImportBlobData {
+  campaignId: string;
+  blobUrl: string;
   mappings: Record<string, string>;
   schemaConfig: SchemaField[];
 }
@@ -247,3 +255,217 @@ export async function processCSVImport(data: CSVImportData): Promise<{
   }
 }
 
+export async function processCSVImportFromBlob(data: CSVImportBlobData): Promise<{
+  success: boolean;
+  processed: number;
+  errors: number;
+  errorDetails?: CSVImportError[];
+}> {
+  const { campaignId, blobUrl, mappings, schemaConfig } = data;
+
+  let processed = 0;
+  let errors = 0;
+  const errorDetails: CSVImportError[] = [];
+  let rowNumber = 0;
+
+  try {
+    const res = await fetch(blobUrl);
+    if (!res.ok || !res.body) {
+      throw new Error("Failed to read CSV blob");
+    }
+
+    const nodeStream = Readable.fromWeb(res.body as any);
+
+    await streamCSVRowsFromStream(nodeStream, async (rows: CSVRow[]) => {
+      const leadsToCreate: Array<{ lead: any; rowNum: number }> = [];
+
+      for (const row of rows) {
+        rowNumber++;
+        const currentRowNumber = rowNumber;
+        try {
+          const standardData: Record<string, any> = {};
+          const customData: Record<string, any> = {};
+
+          const customFieldMap = new Map<string, SchemaField>();
+          schemaConfig.forEach((field) => {
+            customFieldMap.set(field.key, field);
+          });
+
+          for (const [csvColumn, systemField] of Object.entries(mappings)) {
+            const rawValue = row[csvColumn];
+
+            if (!rawValue || rawValue.trim() === "") continue;
+
+            if (systemField.startsWith("custom:")) {
+              const customKey = systemField.replace("custom:", "");
+              const fieldConfig = customFieldMap.get(customKey);
+
+              let optionValues: string[] | undefined;
+              if (fieldConfig?.type === "dropdown" && fieldConfig?.options) {
+                optionValues = fieldConfig.options.map((opt) =>
+                  typeof opt === "string" ? opt : (opt as DropdownOption).value
+                );
+              }
+
+              const parsedValue = parseFieldValue(
+                rawValue,
+                fieldConfig?.type || "text",
+                optionValues
+              );
+
+              if (fieldConfig) {
+                const validation = validateFieldValue(parsedValue, fieldConfig);
+                if (!validation.valid) {
+                  errorDetails.push({
+                    row: rowNumber,
+                    reason: `Validation failed for field "${fieldConfig.label}": ${validation.error}`,
+                    data: { field: customKey, value: rawValue },
+                  });
+                }
+              }
+
+              customData[customKey] = parsedValue;
+            } else {
+              standardData[systemField] = rawValue.trim();
+            }
+          }
+
+          if (!standardData.email && !standardData.phone && !standardData.firstName) {
+            errors++;
+            errorDetails.push({
+              row: rowNumber,
+              reason:
+                "Missing required fields: At least one of email, phone, or firstName must be provided",
+              data: { standardData, customData },
+            });
+            continue;
+          }
+
+          let existingLead = null;
+          if (standardData.email) {
+            existingLead = await prisma.lead.findFirst({
+              where: {
+                campaignId,
+                standardData: {
+                  path: ["email"],
+                  equals: standardData.email,
+                },
+              },
+            });
+            if (existingLead) {
+              errors++;
+              errorDetails.push({
+                row: rowNumber,
+                reason: `Duplicate email: ${standardData.email} already exists in this campaign`,
+                data: { email: standardData.email },
+              });
+              continue;
+            }
+          } else if (standardData.phone) {
+            existingLead = await prisma.lead.findFirst({
+              where: {
+                campaignId,
+                standardData: {
+                  path: ["phone"],
+                  equals: standardData.phone,
+                },
+              },
+            });
+            if (existingLead) {
+              errors++;
+              errorDetails.push({
+                row: rowNumber,
+                reason: `Duplicate phone: ${standardData.phone} already exists in this campaign`,
+                data: { phone: standardData.phone },
+              });
+              continue;
+            }
+          }
+
+          if (Object.keys(standardData).length === 0) {
+            errors++;
+            errorDetails.push({
+              row: rowNumber,
+              reason: "No standard data fields mapped. At least one field must be mapped.",
+              data: row,
+            });
+            continue;
+          }
+
+          leadsToCreate.push({
+            lead: {
+              campaignId,
+              status: "New",
+              standardData,
+              customData: Object.keys(customData).length > 0 ? customData : undefined,
+            },
+            rowNum: currentRowNumber,
+          });
+        } catch (error: any) {
+          errors++;
+          const errorMessage = error?.message || String(error) || "Unknown error";
+          console.error(`Error processing row ${rowNumber}:`, error);
+          errorDetails.push({
+            row: rowNumber,
+            reason: `Processing error: ${errorMessage}`,
+            data: row,
+          });
+        }
+      }
+
+      if (leadsToCreate.length > 0) {
+        try {
+          const leadData = leadsToCreate.map((item) => item.lead);
+          const result = await prisma.lead.createMany({
+            data: leadData,
+            skipDuplicates: true,
+          });
+          processed += result.count;
+
+          const skipped = leadsToCreate.length - result.count;
+          if (skipped > 0) {
+            errors += skipped;
+            console.warn(`${skipped} leads were skipped due to duplicates in this batch`);
+            for (let i = 0; i < skipped && i < leadsToCreate.length; i++) {
+              errorDetails.push({
+                row: leadsToCreate[i].rowNum,
+                reason:
+                  "Duplicate email: Lead was skipped (likely duplicate created during import)",
+                data: { email: (leadsToCreate[i].lead.standardData as any)?.email },
+              });
+            }
+          }
+        } catch (error: any) {
+          console.error("Bulk insert failed, trying individual inserts:", error);
+          for (const item of leadsToCreate) {
+            try {
+              await prisma.lead.create({ data: item.lead });
+              processed++;
+            } catch (individualError: any) {
+              errors++;
+              const errorMessage = individualError?.message || String(individualError);
+              errorDetails.push({
+                row: item.rowNum,
+                reason: `Database error: ${errorMessage}`,
+                data: {
+                  email: (item.lead.standardData as any)?.email,
+                  error: errorMessage,
+                },
+              });
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      processed,
+      errors,
+      errorDetails: errorDetails.length > 0 ? errorDetails : undefined,
+    };
+  } catch (error) {
+    console.error("Error processing CSV from blob:", error);
+    throw error;
+  }
+}

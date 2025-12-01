@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getServerSession } from "next-auth";
+import { Readable } from "stream";
+import { put } from "@vercel/blob";
 import { authOptions } from "@/lib/auth";
-import { parseCSVHeaders, parseCSVPreview } from "@/lib/csv-parser";
-import { processCSVImport } from "@/lib/csv-processor";
+import { parseCSVHeadersFromStream, parseCSVPreviewFromStream } from "@/lib/csv-parser";
+import { processCSVImportFromBlob } from "@/lib/csv-processor";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -46,26 +45,23 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Save file temporarily
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const uploadsDir = join(process.cwd(), "uploads");
-    
-    // Create uploads directory if it doesn't exist
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-    
-    const filePath = join(uploadsDir, `${Date.now()}_${file.name}`);
 
-    await writeFile(filePath, buffer);
+    const blobName = `${Date.now()}_${file.name}`;
+    const { url: blobUrl } = await put(blobName, buffer, {
+      access: "private",
+    });
 
-    // Parse CSV headers and preview
-    const headers = await parseCSVHeaders(filePath);
-    const preview = await parseCSVPreview(filePath, 5);
+    const stream = Readable.from(buffer);
+
+    const headers = await parseCSVHeadersFromStream(stream);
+
+    const previewStream = Readable.from(buffer);
+    const preview = await parseCSVPreviewFromStream(previewStream, 5);
 
     return NextResponse.json({
-      filePath,
+      blobUrl,
       headers,
       preview,
     });
@@ -110,11 +106,11 @@ export async function PUT(
     }
     
     const body = await request.json();
-    const { filePath, mappings, schemaConfig } = body;
+    const { blobUrl, mappings, schemaConfig } = body;
 
-    if (!filePath || !mappings) {
+    if (!blobUrl || !mappings) {
       return NextResponse.json(
-        { error: "File path and mappings are required" },
+        { error: "Blob URL and mappings are required" },
         { status: 400 }
       );
     }
@@ -146,9 +142,9 @@ export async function PUT(
 
     // Process CSV import and wait for completion to return results
     try {
-      const result = await processCSVImport({
+      const result = await processCSVImportFromBlob({
         campaignId: id,
-        filePath,
+        blobUrl,
         mappings,
         schemaConfig: schemaConfig || [],
       });
