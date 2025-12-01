@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { GlobalSearchDialog } from "@/components/search/global-search-dialog";
-import { LogOut, Settings, User, Search } from "lucide-react";
+import { LogOut, Settings, Search } from "lucide-react";
 import Link from "next/link";
 
 // Brand Colors
@@ -121,12 +121,6 @@ export function TopBar() {
                 <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
                   <Settings className="h-4 w-4" />
                   Paramètres
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
-                  <User className="h-4 w-4" />
-                  Profil
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

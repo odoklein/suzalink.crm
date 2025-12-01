@@ -48,7 +48,6 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "@/components/admin/user-dialog";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
-import { AdminKpiWidgets } from "@/components/admin/admin-kpi-widgets";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 
@@ -305,9 +304,6 @@ export default function AdminUsersPage() {
           Ajouter un utilisateur
         </Button>
       </div>
-
-      {/* KPI Widgets */}
-      <AdminKpiWidgets />
 
       {/* Filters */}
       <Card className="border-[#E6E8EB] shadow-sm">

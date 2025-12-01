@@ -136,7 +136,7 @@ export default function GuestPortalPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-body-sm">Total Leads</CardTitle>
+              <CardTitle className="text-body-sm">Total Prospects</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -152,7 +152,7 @@ export default function GuestPortalPage() {
             </CardHeader>
             <CardContent>
               <div className="text-kpi">{data.stats.contactRate.toFixed(1)}%</div>
-              <p className="text-caption text-muted-foreground">Leads contacted</p>
+              <p className="text-caption text-muted-foreground">Prospects contacted</p>
             </CardContent>
           </Card>
 
@@ -163,7 +163,7 @@ export default function GuestPortalPage() {
             </CardHeader>
             <CardContent>
               <div className="text-kpi">{data.stats.conversionRate.toFixed(1)}%</div>
-              <p className="text-caption text-muted-foreground">Qualified leads</p>
+              <p className="text-caption text-muted-foreground">Qualified prospects</p>
             </CardContent>
           </Card>
 
@@ -184,7 +184,7 @@ export default function GuestPortalPage() {
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Leads by Status</CardTitle>
+              <CardTitle>Prospects by Status</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>

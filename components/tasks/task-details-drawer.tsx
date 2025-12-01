@@ -97,14 +97,14 @@ export function TaskDetailsDrawer({
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-counts"] });
       toast({
-        title: "Success",
-        description: "Task status updated",
+        title: "Succès",
+        description: "Statut de la tâche mis à jour",
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update task status",
+        title: "Erreur",
+        description: "Échec de la mise à jour du statut de la tâche",
         variant: "destructive",
       });
     },
@@ -124,10 +124,10 @@ export function TaskDetailsDrawer({
             <>
               <SheetHeader>
                 <SheetTitle className="text-[24px] font-semibold text-text-main tracking-[-0.5px]">
-                  Loading...
+                  Chargement...
                 </SheetTitle>
                 <SheetDescription className="text-body text-text-body mt-2">
-                  Loading task details
+                  Chargement des détails de la tâche
                 </SheetDescription>
               </SheetHeader>
               <div className="space-y-4 mt-6">
@@ -148,7 +148,7 @@ export function TaskDetailsDrawer({
                       {task.title}
                     </SheetTitle>
                     <SheetDescription className="text-body text-text-body mt-2">
-                      Task details and information
+                      Détails et informations de la tâche
                     </SheetDescription>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
@@ -199,7 +199,7 @@ export function TaskDetailsDrawer({
 
                       <div>
                         <Label className="text-sm font-medium text-text-body mb-1 block">
-                          Due Date
+                          Date d'échéance
                         </Label>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-text-body" />
@@ -213,7 +213,7 @@ export function TaskDetailsDrawer({
                     {task.completedAt && (
                       <div>
                         <Label className="text-sm font-medium text-text-body mb-1 block">
-                          Completed At
+                          Terminé le
                         </Label>
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-success-500" />
@@ -231,7 +231,7 @@ export function TaskDetailsDrawer({
                   <CardContent className="pt-6">
                     <div className="space-y-3">
                       <Label className="text-sm font-medium text-text-main">
-                        Update Status
+                        Mettre à jour le statut
                       </Label>
                       <Select
                         value={task.status}
@@ -243,10 +243,10 @@ export function TaskDetailsDrawer({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="pending">En attente</SelectItem>
+                          <SelectItem value="in_progress">En cours</SelectItem>
+                          <SelectItem value="completed">Terminée</SelectItem>
+                          <SelectItem value="cancelled">Annulée</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -263,7 +263,7 @@ export function TaskDetailsDrawer({
                     }}
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Edit Task
+                    Modifier la tâche
                   </Button>
                   {task.projectId && (
                     <Button
@@ -275,7 +275,7 @@ export function TaskDetailsDrawer({
                       }}
                     >
                       <Building2 className="mr-2 h-4 w-4" />
-                      View Project
+                      Voir le projet
                     </Button>
                   )}
                 </div>
@@ -285,15 +285,15 @@ export function TaskDetailsDrawer({
             <>
               <SheetHeader>
                 <SheetTitle className="text-[24px] font-semibold text-text-main tracking-[-0.5px]">
-                  Task Not Found
+                  Tâche introuvable
                 </SheetTitle>
                 <SheetDescription className="text-body text-text-body mt-2">
-                  Unable to load task details
+                  Impossible de charger les détails de la tâche
                 </SheetDescription>
               </SheetHeader>
               <div className="text-center py-12">
                 <AlertTriangle className="mx-auto h-12 w-12 text-text-body mb-4 opacity-50" />
-                <p className="text-body text-text-body">Task not found</p>
+                <p className="text-body text-text-body">Tâche introuvable</p>
               </div>
             </>
           )}

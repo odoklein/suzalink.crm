@@ -9,7 +9,7 @@ interface BentoCardProps {
   children: ReactNode;
   size?: BentoSize;
   className?: string;
-  gradient?: "blue" | "green" | "amber" | "purple" | "rose" | "none";
+  gradient?: "blue" | "green" | "amber" | "purple" | "rose" | "cyan" | "none";
   glass?: boolean;
   hover?: boolean;
   delay?: number;
@@ -24,11 +24,12 @@ const sizeClasses: Record<BentoSize, string> = {
 };
 
 const gradientClasses: Record<string, string> = {
-  blue: "bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5",
-  green: "bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5",
-  amber: "bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5",
-  purple: "bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5",
-  rose: "bg-gradient-to-br from-rose-500/5 via-transparent to-red-500/5",
+  blue: "bg-gradient-to-br from-blue-500/3 via-transparent to-indigo-500/2",
+  green: "bg-gradient-to-br from-emerald-500/3 via-transparent to-teal-500/2",
+  amber: "bg-gradient-to-br from-amber-500/3 via-transparent to-orange-500/2",
+  purple: "bg-gradient-to-br from-purple-500/3 via-transparent to-pink-500/2",
+  rose: "bg-gradient-to-br from-rose-500/3 via-transparent to-red-500/2",
+  cyan: "bg-gradient-to-br from-cyan-500/3 via-transparent to-blue-500/2",
   none: "",
 };
 
@@ -50,7 +51,7 @@ export const BentoCard = forwardRef<HTMLDivElement, BentoCardProps>(
         ref={ref}
         className={cn(
           // Base styles
-          "relative rounded-2xl border border-gray-200/60 overflow-hidden",
+          "relative rounded-xl border border-gray-300/40 overflow-hidden",
           "transition-all duration-300 ease-out",
           // Size
           sizeClasses[size],
@@ -61,7 +62,7 @@ export const BentoCard = forwardRef<HTMLDivElement, BentoCardProps>(
             ? "bg-white/70 backdrop-blur-xl"
             : "bg-white",
           // Hover effects
-          hover && "hover:shadow-lg hover:shadow-gray-200/50 hover:border-gray-300/60 hover:scale-[1.01]",
+          hover && "hover:shadow-sm hover:border-gray-400/50",
           // Animation
           "animate-in fade-in-0 slide-in-from-bottom-4",
           className
@@ -75,7 +76,7 @@ export const BentoCard = forwardRef<HTMLDivElement, BentoCardProps>(
         <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent pointer-events-none" />
         
         {/* Content */}
-        <div className="relative h-full p-5">
+        <div className="relative h-full p-4">
           {children}
         </div>
       </div>
@@ -126,15 +127,15 @@ export function BentoCardHeader({
   title,
   subtitle,
   action,
-  iconBg = "bg-primary-100",
+  iconBg = "bg-gray-100",
 }: BentoCardHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-3 mb-4">
-      <div className="flex items-center gap-3">
+    <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-center gap-2.5">
         {icon && (
           <div
             className={cn(
-              "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
               iconBg
             )}
           >
@@ -144,7 +145,7 @@ export function BentoCardHeader({
         <div>
           <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>
@@ -183,4 +184,5 @@ export function BentoCardFooter({
     </div>
   );
 }
+
 

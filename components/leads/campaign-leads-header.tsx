@@ -76,7 +76,7 @@ export function CampaignLeadsHeader({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 md:justify-end flex-1">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 min-w-[220px] md:min-w-[360px]">
             <StatPill
-              label="Total leads"
+              label="Total prospects"
               value={totalLeads.toLocaleString("fr-FR")}
               icon={Users}
             />

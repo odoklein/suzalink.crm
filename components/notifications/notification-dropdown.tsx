@@ -34,7 +34,7 @@ type FilterType = 'All' | 'Lead' | 'Task' | 'Email' | 'System';
 
 const filterLabels: Record<FilterType, string> = {
   All: 'Tout',
-  Lead: 'Leads',
+  Lead: 'Prospects',
   Task: 'Tâches',
   Email: 'Emails',
   System: 'Système',

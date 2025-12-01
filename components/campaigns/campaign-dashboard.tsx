@@ -289,18 +289,14 @@ export function CampaignDashboard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5">
-                  <DropdownMenuItem className="rounded-lg">
-                    Edit campaign
+                  <DropdownMenuItem
+                    className="rounded-lg"
+                    onClick={onOpenSettings}
+                  >
+                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem className="rounded-lg">
                     Export data
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-lg">
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="rounded-lg text-destructive-500">
-                    Delete campaign
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -101,7 +101,7 @@ export function SearchResults<T extends Record<string, any>>({
   const renderLeadItem = (lead: any) => {
     const standardData = lead.standardData || {};
     const customData = lead.customData || {};
-    const fullName = `${standardData.firstName || ''} ${standardData.lastName || ''}`.trim() || 'Unknown Lead';
+    const fullName = `${standardData.firstName || ''} ${standardData.lastName || ''}`.trim() || 'Unknown Prospect';
     
     const getInitials = (firstName?: string, lastName?: string) => {
       const first = firstName?.[0] || '';
@@ -236,7 +236,7 @@ export function SearchResults<T extends Record<string, any>>({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              {campaign._count?.leads || 0} leads
+              {campaign._count?.leads || 0} prospects
             </p>
           </div>
         </div>

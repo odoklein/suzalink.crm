@@ -25,12 +25,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -195,9 +189,8 @@ export function Sidebar() {
           </div>
 
           {/* Navigation */}
-          <TooltipProvider delayDuration={300}>
-            <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-              <div style={{ paddingTop: "16px", paddingLeft: "12px", paddingRight: "12px" }}>
+          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+            <div style={{ paddingTop: "16px", paddingLeft: "12px", paddingRight: "12px" }}>
                 {filteredGroups.map((group, groupIndex) => (
                   <div key={group.title} style={groupIndex > 0 ? { marginTop: "12px" } : {}}>
                     {!isCollapsed && (
@@ -318,19 +311,7 @@ export function Sidebar() {
                             </DropdownMenu>
                           );
 
-                          if (isCollapsed) {
-                            return (
-                              <Tooltip key={item.name}>
-                                <TooltipTrigger asChild>
-                                  {prospectionDropdown}
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="bg-gray-900 text-white text-xs">
-                                  {item.name}
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          }
-
+                          // In collapsed mode, keep the same button without tooltip
                           return <div key={item.name}>{prospectionDropdown}</div>;
                         }
 
@@ -345,19 +326,6 @@ export function Sidebar() {
                           </Link>
                         );
 
-                        if (isCollapsed) {
-                          return (
-                            <Tooltip key={item.name}>
-                              <TooltipTrigger asChild>
-                                {navItem}
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="bg-gray-900 text-white text-xs">
-                                {item.name}
-                              </TooltipContent>
-                            </Tooltip>
-                          );
-                        }
-
                         return navItem;
                       })}
                     </div>
@@ -365,7 +333,6 @@ export function Sidebar() {
                 ))}
               </div>
             </nav>
-          </TooltipProvider>
 
           {/* Assistant Footer */}
           <div className={cn(
@@ -373,14 +340,7 @@ export function Sidebar() {
             isCollapsed ? "flex justify-center" : ""
           )}>
             {isCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AssistantTrigger variant="icon" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-gray-900 text-white text-xs">
-                  Besoin d'aide ?
-                </TooltipContent>
-              </Tooltip>
+              <AssistantTrigger variant="icon" />
             ) : (
               <AssistantTrigger>
                 Besoin d'aide ?

@@ -61,7 +61,7 @@ export function CompactLeadsList({
         <CardHeader>
           <CardTitle className="text-sm font-medium text-text-main flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Recent Leads
+            Recent Prospects
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -84,12 +84,12 @@ export function CompactLeadsList({
         <CardHeader>
           <CardTitle className="text-sm font-medium text-text-main flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Recent Leads
+            Recent Prospects
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-text-body text-center py-4">
-            No leads yet
+            No prospects yet
           </p>
         </CardContent>
       </Card>
@@ -101,7 +101,7 @@ export function CompactLeadsList({
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-text-main flex items-center gap-2">
           <Users className="h-4 w-4" />
-          Recent Leads
+          Recent Prospects
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">

@@ -175,3 +175,4 @@ export function getContextualHelpMessage(pathname: string): string {
   return helpMessages[context.section] || "Comment puis-je vous aider ?";
 }
 
+

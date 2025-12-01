@@ -36,6 +36,12 @@ import {
 } from "@/components/ui/tooltip";
 import { DashboardSection } from "./campaign-dashboard";
 
+interface LeadStatusConfig {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Lead {
   id: string;
   standardData: {
@@ -46,11 +52,7 @@ interface Lead {
     jobTitle?: string;
     company?: string;
   };
-  status?: {
-    id: string;
-    name: string;
-    color: string;
-  };
+  statusConfig?: LeadStatusConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,7 +83,7 @@ function LeadRow({
     .slice(0, 2)
     .toUpperCase();
 
-  const statusColor = lead.status?.color || "#6B7280";
+  const statusColor = lead.statusConfig?.color || "#6B7280";
 
   return (
     <div
@@ -108,7 +110,7 @@ function LeadRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-medium text-gray-900 truncate">{fullName}</p>
-          {lead.status && (
+          {lead.statusConfig && (
             <Badge
               className="text-[10px] px-1.5 py-0 font-medium rounded"
               style={{
@@ -117,7 +119,7 @@ function LeadRow({
                 borderColor: `${statusColor}30`,
               }}
             >
-              {lead.status.name}
+              {lead.statusConfig.name}
             </Badge>
           )}
         </div>
@@ -225,14 +227,14 @@ export function LeadsSection({
   });
 
   const leads: Lead[] = leadsData?.leads || [];
-  const totalCount = leadsData?.total || 0;
+  const totalCount = leadsData?.pagination?.total || 0;
 
   // Filter leads
   const filteredLeads = useMemo(() => {
     let result = leads;
 
     if (statusFilter) {
-      result = result.filter((l) => l.status?.id === statusFilter);
+      result = result.filter((l: any) => l.statusConfig?.id === statusFilter);
     }
 
     if (searchQuery) {
@@ -255,8 +257,8 @@ export function LeadsSection({
 
   return (
     <DashboardSection
-      title="Leads"
-      subtitle={`${totalCount} leads au total`}
+      title="Prospects"
+      subtitle={`${totalCount} prospects au total`}
       action={
         <div className="flex items-center gap-2">
           <Button
@@ -266,7 +268,7 @@ export function LeadsSection({
             onClick={onAddLead}
           >
             <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-            Ajouter un lead
+            Ajouter un prospect
           </Button>
         </div>
       }
@@ -276,7 +278,7 @@ export function LeadsSection({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Rechercher des leads..."
+            placeholder="Rechercher des prospects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9 rounded-lg text-sm"
@@ -330,8 +332,8 @@ export function LeadsSection({
             </div>
             <p className="text-sm text-gray-500">
               {searchQuery || statusFilter
-                ? "Aucun lead ne correspond à vos filtres"
-                : "Aucun lead pour le moment"}
+                ? "Aucun prospect ne correspond à vos filtres"
+                : "Aucun prospect pour le moment"}
             </p>
             {!searchQuery && !statusFilter && (
               <Button
@@ -340,7 +342,7 @@ export function LeadsSection({
                 className="mt-3"
                 onClick={onAddLead}
               >
-                Ajouter votre premier lead
+                Ajouter votre premier prospect
               </Button>
             )}
           </div>
@@ -362,7 +364,7 @@ export function LeadsSection({
                   variant="ghost"
                   className="w-full h-9 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50"
                 >
-                  Voir tous les {totalCount} leads
+                  Voir tous les {totalCount} prospects
                   <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </div>
