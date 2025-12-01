@@ -50,7 +50,7 @@ export async function POST(
 
     const blobName = `${Date.now()}_${file.name}`;
     const { url: blobUrl } = await put(blobName, buffer, {
-      access: "private",
+      access: "public",
     });
 
     const stream = Readable.from(buffer);
